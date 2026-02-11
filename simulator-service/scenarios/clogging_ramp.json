@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "name": "clogging_ramp",
+  "description": "Gradual clogging - resistance increases linearly over time",
+  "seed": 12345,
+  "duration_sec": 3600,
+  "initial_conditions": {
+    "rpm": 2950,
+    "valve_open_pct": 60.0
+  },
+  "faults": [
+    {
+      "type": "clogging",
+      "start_time_sec": 200,
+      "params": {
+        "ramp_rate": 0.0005
+      }
+    }
+  ],
+  "setpoints": []
+}

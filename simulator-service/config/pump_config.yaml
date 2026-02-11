@@ -1,0 +1,30 @@
+# Pump system configuration
+# Based on physical models from Reeh et al. (2023) and standard fluid mechanics
+
+pump:
+  # Centrifugal pump nominal parameters
+  nominal_rpm: 2950.0          # Rated speed (rpm)
+  nominal_flow_m3h: 100.0      # Rated flow rate (m³/h)
+  nominal_head_m: 50.0         # Rated head (m)
+  nominal_efficiency: 0.75     # Rated efficiency (0-1)
+
+pipe:
+  # Pipe system parameters (Darcy-Weisbach model)
+  pipe_length_m: 100.0          # Pipe length (m)
+  pipe_diameter_m: 0.2          # Pipe diameter (m) - 200mm
+  pipe_roughness_mm: 0.1        # Pipe roughness (mm)
+  fitting_loss_coefficient: 2.5  # Sum of K values for fittings
+  static_head_m: 10.0           # Static head / elevation difference (m)
+
+bearing:
+  # Bearing parameters (IEEE PHM / ISO 20816 based)
+  base_vibration_mm_s: 2.0      # Baseline vibration RMS (mm/s)
+  base_bearing_temp_c: 45.0     # Baseline bearing temperature (°C)
+  ambient_temp_c: 25.0          # Ambient temperature (°C)
+
+motor:
+  # Motor parameters
+  voltage_v: 400.0              # Line voltage (V) - three-phase
+  motor_efficiency: 0.92        # Motor efficiency (0-1)
+  power_factor: 0.85            # Power factor cos(φ)
+  no_load_current_a: 5.0        # No-load current (A)

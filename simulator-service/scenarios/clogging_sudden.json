@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "name": "clogging_sudden",
+  "description": "Sudden clogging - step increase in pipe resistance",
+  "seed": 12345,
+  "duration_sec": 1800,
+  "initial_conditions": {
+    "rpm": 2950,
+    "valve_open_pct": 60.0
+  },
+  "faults": [
+    {
+      "type": "clogging",
+      "start_time_sec": 300,
+      "params": {
+        "resistance_factor": 2.0
+      }
+    }
+  ],
+  "setpoints": []
+}

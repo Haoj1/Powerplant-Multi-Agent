@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "name": "bearing_wear_chronic",
+  "description": "Chronic bearing wear - gradual degradation over time",
+  "seed": 12345,
+  "duration_sec": 3600,
+  "initial_conditions": {
+    "rpm": 2950,
+    "valve_open_pct": 60.0
+  },
+  "faults": [
+    {
+      "type": "bearing_wear",
+      "start_time_sec": 100,
+      "params": {
+        "rate_per_sec": 0.0001
+      }
+    }
+  ],
+  "setpoints": []
+}

@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "name": "healthy_baseline",
+  "description": "Healthy pump operation with no faults",
+  "seed": 12345,
+  "duration_sec": 600,
+  "initial_conditions": {
+    "rpm": 2950,
+    "valve_open_pct": 60.0
+  },
+  "faults": [],
+  "setpoints": [
+    {
+      "time_sec": 200,
+      "valve_open_pct": 70.0
+    },
+    {
+      "time_sec": 400,
+      "valve_open_pct": 50.0
+    }
+  ]
+}
