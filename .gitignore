@@ -19,33 +19,43 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+*.manifest
 
 # Virtual environments
 venv/
 env/
 ENV/
 .venv
+.venv/
 
-# Keep venv directory structure but ignore contents
-!venv/.gitkeep
-
-# Environment variables
+# Environment & secrets
 .env
 .env.local
+.env.*.local
+*.pem
 
-# IDE
+# IDE & editors
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.project
+.pydevproject
+.settings/
 
-# Logs
+# Logs & runtime
 logs/
 *.log
 *.jsonl
 
-# Mosquitto
+# Mosquitto runtime
 mosquitto/data/*
 mosquitto/log/*
 !mosquitto/data/.gitkeep
@@ -54,3 +64,17 @@ mosquitto/log/*
 # OS
 .DS_Store
 Thumbs.db
+Desktop.ini
+
+# Cursor / local tooling
+.cursor/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Local test / temp
+tmp/
+temp/
+*.tmp
+.cache/

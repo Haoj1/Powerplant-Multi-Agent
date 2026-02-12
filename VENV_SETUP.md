@@ -75,7 +75,18 @@ deactivate
 After activating the virtual environment, verify all packages are installed:
 
 ```bash
-python3 -c "import fastapi, uvicorn, pydantic, paho.mqtt, httpx, numpy; print('✅ All packages installed successfully')"
+# If your venv has both python3.8 and python3.13, use the one that has the packages (usually python3.13)
+./venv/bin/python3.13 -c "import fastapi, uvicorn, pydantic, paho.mqtt, httpx, numpy; print('✅ All packages installed successfully')"
+# Or if that fails, try:
+./venv/bin/python -c "import fastapi; print('OK')"
+```
+
+**If you get `ModuleNotFoundError: No module named 'fastapi'`** even with venv activated: your venv may have multiple Python versions and packages were installed for a different one. Run the simulator with the same Python that has the packages:
+
+```bash
+./venv/bin/python3.13 simulator-service/main.py
+# or use the helper script:
+./run_simulator.sh
 ```
 
 ## Running the Simulator

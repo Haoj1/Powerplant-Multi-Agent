@@ -1,22 +1,22 @@
 """Simulator service - generates telemetry data and publishes to MQTT."""
 
-import asyncio
-import threading
-import time
-from typing import Optional, Dict, Any
-from pathlib import Path
-
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-
 import sys
 from pathlib import Path
 
-# Add project root to path for shared-lib imports
-project_root = Path(__file__).parent.parent
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
+# Add project root and simulator-service to path for imports
+_project_root = Path(__file__).parent.parent
+_simulator_dir = Path(__file__).parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+if str(_simulator_dir) not in sys.path:
+    sys.path.insert(0, str(_simulator_dir))
+
+import threading
+import time
+from typing import Optional, Dict, Any
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 from shared_lib.config import get_settings
 from shared_lib.utils import append_jsonl, ensure_log_dir
@@ -44,16 +44,8 @@ class ScenarioRequest(BaseModel):
     scenario: Dict[str, Any]
 
 
-class SetpointRequest(BaseModel):
-    """Request model for setting setpoints."""
-    rpm: Optional[float] = None
-    valve_open_pct: Optional[float] = None
-
-
 def load_pump_config() -> Dict[str, Any]:
-    """Load pump configuration from YAML or use defaults."""
-    # For now, use default configuration
-    # TODO: Load from config/pump_config.yaml if exists
+    """Load pump configuration (defaults)."""
     return {
         "pump": {
             "nominal_rpm": 2950.0,
@@ -85,42 +77,37 @@ def load_pump_config() -> Dict[str, Any]:
 def simulation_loop():
     """Main simulation loop running in background thread."""
     global executor, mqtt_publisher, running
-    
-    if not executor or not mqtt_publisher:
+
+    if not executor:
         return
-    
+
     frequency_hz = settings.simulator_frequency_hz
     dt = 1.0 / frequency_hz
-    
-    # Ensure log directory exists
+
     log_dir = ensure_log_dir(settings.log_dir)
     telemetry_log_path = log_dir / "telemetry.jsonl"
-    
+
     while running and executor:
         try:
-            # Execute one simulation step
             telemetry = executor.step(dt)
-            
+
             if telemetry is None:
-                # Simulation ended
                 running = False
                 break
-            
-            # Publish to MQTT
-            try:
-                mqtt_publisher.publish_telemetry(telemetry)
-            except Exception as e:
-                print(f"Warning: MQTT publish error: {e}")
-            
-            # Log to file
+
+            if mqtt_publisher and mqtt_publisher.connected:
+                try:
+                    mqtt_publisher.publish_telemetry(telemetry)
+                except Exception as e:
+                    print(f"Warning: MQTT publish error: {e}")
+
             try:
                 append_jsonl(telemetry_log_path, telemetry.model_dump())
             except Exception as e:
                 print(f"Warning: Log write error: {e}")
-            
-            # Sleep to maintain frequency
+
             time.sleep(dt)
-            
+
         except Exception as e:
             print(f"Error in simulation loop: {e}")
             running = False
@@ -137,6 +124,7 @@ async def startup_event():
     except Exception as e:
         print(f"Warning: Could not connect to MQTT broker: {e}")
         print("Simulator will run but telemetry will not be published")
+        mqtt_publisher = None
 
 
 @app.on_event("shutdown")
@@ -162,7 +150,7 @@ async def health():
 async def status():
     """Get simulator status."""
     global executor, running
-    
+
     if executor:
         status_dict = executor.get_status()
         status_dict["running"] = running
@@ -179,17 +167,12 @@ async def status():
 async def load_scenario(request: ScenarioRequest):
     """Load a scenario."""
     global executor, running
-    
+
     try:
-        # Validate scenario
         scenario = ScenarioLoader.load_from_dict(request.scenario)
-        
-        # Load pump configuration
         pump_config = load_pump_config()
-        
-        # Create executor
         executor = ScenarioExecutor(scenario, pump_config)
-        
+
         return {
             "status": "loaded",
             "scenario_name": scenario["name"],
@@ -203,21 +186,19 @@ async def load_scenario(request: ScenarioRequest):
 async def start_scenario():
     """Start scenario execution."""
     global executor, running, simulation_thread
-    
+
     if not executor:
         raise HTTPException(status_code=400, detail="No scenario loaded")
-    
+
     if running:
         raise HTTPException(status_code=400, detail="Simulation already running")
-    
-    # Start executor
+
     executor.start()
     running = True
-    
-    # Start simulation thread
+
     simulation_thread = threading.Thread(target=simulation_loop, daemon=True)
     simulation_thread.start()
-    
+
     return {"status": "started"}
 
 
@@ -225,15 +206,14 @@ async def start_scenario():
 async def stop_scenario():
     """Stop scenario execution."""
     global running, executor
-    
+
     if not running:
         return {"status": "already_stopped"}
-    
+
     running = False
-    
     if executor:
         executor.stop()
-    
+
     return {"status": "stopped"}
 
 
@@ -241,14 +221,13 @@ async def stop_scenario():
 async def reset_scenario():
     """Reset scenario to beginning."""
     global executor, running
-    
+
     running = False
-    
     if executor:
         executor.stop()
         executor.current_time = 0.0
         executor.setpoint_index = 0
-    
+
     return {"status": "reset"}
 
 
