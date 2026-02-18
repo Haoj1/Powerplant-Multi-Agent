@@ -102,7 +102,8 @@ def insert_diagnosis(
     recommended_actions: Optional[List[str]] = None,
     evidence: Optional[List[Dict[str, Any]]] = None,
     alert_id: Optional[int] = None,
-) -> None:
+) -> Optional[int]:
+    """Insert diagnosis and return the inserted row id (for Agent C linkage)."""
     with _lock:
         conn = get_connection()
         try:
@@ -115,6 +116,46 @@ def insert_diagnosis(
                     json.dumps(evidence) if evidence else None,
                     alert_id,
                 ),
+            )
+            row_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            conn.commit()
+            return row_id
+        finally:
+            conn.close()
+
+
+def query_review_requests(status: str = "pending", limit: int = 50) -> List[Dict[str, Any]]:
+    """Query review requests by status (for Agent D)."""
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.execute(
+                """SELECT id, diagnosis_id, plant_id, asset_id, ts, status, created_at, resolved_at
+                   FROM review_requests WHERE status = ? ORDER BY created_at DESC LIMIT ?""",
+                (status, limit),
+            )
+            rows = cur.fetchall()
+            cols = [c[0] for c in cur.description]
+            return [dict(zip(cols, r)) for r in rows]
+        finally:
+            conn.close()
+
+
+def insert_review_request(
+    diagnosis_id: int,
+    plant_id: str,
+    asset_id: str,
+    ts: str,
+    status: str = "pending",
+) -> None:
+    """Insert a review request for Agent D."""
+    with _lock:
+        conn = get_connection()
+        try:
+            conn.execute(
+                """INSERT INTO review_requests (diagnosis_id, plant_id, asset_id, ts, status)
+                   VALUES (?,?,?,?,?)""",
+                (diagnosis_id, plant_id, asset_id, ts, status),
             )
             conn.commit()
         finally:

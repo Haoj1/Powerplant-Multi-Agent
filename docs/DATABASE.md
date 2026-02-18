@@ -24,10 +24,11 @@ Each table has **time-oriented indexes** so agents can query by time range effic
 |------------------|----------------------------|-------------------------|
 | **telemetry**    | One row per telemetry msg | `(asset_id, ts)`, `(ts)`, `(ts, asset_id)`, `(fault)` |
 | **alerts**       | One row per alert detail   | `(asset_id, ts)`, `(ts)`, `(ts, asset_id)`, `(severity)` |
-| **diagnosis**    | Agent B diagnosis reports  | `(asset_id, ts)`, `(ts)`, `(ts, asset_id)`, `(root_cause)`, `(alert_id)` — `alert_id` 关联触发的告警 |
+| **diagnosis**    | Agent B diagnosis reports  | `(asset_id, ts)`, `(ts)`, `(root_cause)`, `(alert_id)` |
 | **vision_images**| Simulator image path only | `(asset_id, ts)`, `(ts)`, `(ts, asset_id)` |
 | **vision_analysis** | Agent VLM analysis      | `(asset_id, ts)`, `(ts)`, `(ts, asset_id)` |
-| **tickets**      | Agent C tickets           | `(asset_id, ts)`, `(ts)`, `(ts, asset_id)`, `(status)`, `(ticket_id)` |
+| **review_requests** | Agent C, queued for Agent D | `(status)`, `(diagnosis_id)`, `(asset_id, ts)` |
+| **tickets**      | Agent D (after approval, e.g. SF Case) | `(asset_id, ts)`, `(status)`, `(ticket_id)`, `(diagnosis_id)` |
 | **feedback**     | Agent D review feedback   | `(ticket_id)`, `(ts)`, `(ts, asset_id)` |
 
 - **`(ts)`** — 按时间范围查询（如「最近 1 小时」）
@@ -43,9 +44,10 @@ Writes happen **in addition to** existing JSONL/MQTT; logs are not replaced.
 | **Simulator**| After each telemetry publish and JSONL append (or every `DB_TELEMETRY_INTERVAL_SEC` sec if set) | `telemetry` |
 | **Simulator**| After each vision image save + MQTT publish   | `vision_images` |
 | **Agent A**  | After each alert publish + JSONL append      | `alerts` |
-| **Agent B**  | After each diagnosis publish                 | `diagnosis` (when implemented) |
+| **Agent B**  | After each diagnosis publish                 | `diagnosis` |
+| **Agent C**  | On each diagnosis received                   | `review_requests` |
 | **Agent**    | When it calls VLM and produces a description | `vision_analysis` (when implemented) |
-| **Agent C**  | After creating a ticket                      | `tickets` (when implemented) |
+| **Agent D**  | After approval, create SF Case/Work Order     | `tickets` |
 | **Agent D**  | After submitting feedback                    | `feedback` (when implemented) |
 
 ## Example queries (for dashboard or scripts)

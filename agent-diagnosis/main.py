@@ -89,16 +89,10 @@ def on_alert(topic: str, payload: dict):
             stats["diagnoses_failed"] += 1
         return
 
-    if diagnosis_publisher:
-        try:
-            diagnosis_publisher.publish(report, append_jsonl, alert_id=alert_id)
-            print(f"[Agent B] Published diagnosis: root_cause={report.root_cause.value}, confidence={report.confidence:.2f}")
-        except Exception as e:
-            print(f"[Agent B] Publish error: {e}")
-
+    diagnosis_id = None
     if shared_db:
         try:
-            shared_db.insert_diagnosis(
+            diagnosis_id = shared_db.insert_diagnosis(
                 ts=str(report.ts),
                 plant_id=report.plant_id,
                 asset_id=report.asset_id,
@@ -111,6 +105,13 @@ def on_alert(topic: str, payload: dict):
             )
         except Exception as e:
             print(f"[Agent B] DB write error: {e}")
+
+    if diagnosis_publisher:
+        try:
+            diagnosis_publisher.publish(report, append_jsonl, alert_id=alert_id, diagnosis_id=diagnosis_id)
+            print(f"[Agent B] Published diagnosis: root_cause={report.root_cause.value}, confidence={report.confidence:.2f}")
+        except Exception as e:
+            print(f"[Agent B] Publish error: {e}")
 
     with _stats_lock:
         stats["diagnoses_published"] += 1

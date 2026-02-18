@@ -1,5 +1,6 @@
 """MQTT publisher for diagnosis reports."""
 
+import json
 from pathlib import Path
 from typing import Optional
 
@@ -23,7 +24,7 @@ class DiagnosisPublisher:
     def _ensure_log_dir(self):
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
 
-    def publish(self, report, append_jsonl_fn, alert_id: Optional[int] = None):
+    def publish(self, report, append_jsonl_fn, alert_id: Optional[int] = None, diagnosis_id: Optional[int] = None):
         """
         Publish diagnosis to MQTT and append to log file.
 
@@ -31,11 +32,14 @@ class DiagnosisPublisher:
             report: DiagnosisReport model instance
             append_jsonl_fn: Function (path, dict) to append JSONL
             alert_id: Optional alert id for DB linkage
+            diagnosis_id: Optional diagnosis id for Agent C linkage
         """
         topic = f"{self.diagnosis_topic_prefix}/{report.asset_id}"
-        payload = report.model_dump_json()
-        self.mqtt_client.publish(topic, payload, qos=1)
         d = report.model_dump()
         if alert_id is not None:
             d["alert_id"] = alert_id
+        if diagnosis_id is not None:
+            d["diagnosis_id"] = diagnosis_id
+        payload = json.dumps(d, default=str)
+        self.mqtt_client.publish(topic, payload, qos=1)
         append_jsonl_fn(self.log_path, d)

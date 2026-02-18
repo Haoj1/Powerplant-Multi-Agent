@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     # Min seconds between producing diagnoses (global cooldown to prevent pile-up)
     diagnosis_cooldown_sec: float = 20.0
 
+    # Agent C (Review Queue)
+    ticket_cooldown_sec: float = 30.0  # Max one review_request per asset per N sec
+
 
 @lru_cache()
 def get_settings() -> Settings:

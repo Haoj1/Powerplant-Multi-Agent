@@ -135,6 +135,22 @@ CREATE INDEX IF NOT EXISTS ix_tickets_ts_asset ON tickets(ts, asset_id);
 CREATE INDEX IF NOT EXISTS ix_tickets_status ON tickets(status);
 CREATE UNIQUE INDEX IF NOT EXISTS ix_tickets_ticket_id ON tickets(ticket_id);
 
+-- Review requests (from Agent C; queued for Agent D approval)
+CREATE TABLE IF NOT EXISTS review_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    diagnosis_id INTEGER NOT NULL,
+    plant_id TEXT NOT NULL,
+    asset_id TEXT NOT NULL,
+    ts TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT DEFAULT (datetime('now')),
+    resolved_at TEXT,
+    FOREIGN KEY (diagnosis_id) REFERENCES diagnosis(id)
+);
+CREATE INDEX IF NOT EXISTS ix_review_requests_status ON review_requests(status);
+CREATE INDEX IF NOT EXISTS ix_review_requests_asset_ts ON review_requests(asset_id, ts);
+CREATE INDEX IF NOT EXISTS ix_review_requests_diagnosis ON review_requests(diagnosis_id);
+
 -- Feedback (from Agent D)
 CREATE TABLE IF NOT EXISTS feedback (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -176,7 +192,7 @@ def main():
     _migrate_diagnosis_alert_id(conn)
     conn.close()
     print(f"Schema created: {DB_PATH}")
-    print("Tables: telemetry, alerts, diagnosis, vision_images, vision_analysis, tickets, feedback")
+    print("Tables: telemetry, alerts, diagnosis, vision_images, vision_analysis, tickets, review_requests, feedback")
 
 
 if __name__ == "__main__":
