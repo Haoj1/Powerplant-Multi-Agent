@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "name": "test_alert_quick",
+  "description": "Quick test scenario - high pressure/current to trigger alerts",
+  "seed": 12345,
+  "duration_sec": 120,
+  "initial_conditions": {
+    "rpm": 2950,
+    "valve_open_pct": 60.0
+  },
+  "faults": [
+    {
+      "type": "clogging",
+      "start_time_sec": 10,
+      "params": {
+        "resistance_factor": 3.5
+      }
+    }
+  ],
+  "setpoints": []
+}

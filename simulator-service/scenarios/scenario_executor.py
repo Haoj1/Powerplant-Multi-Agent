@@ -79,6 +79,28 @@ class ScenarioExecutor:
             key=lambda x: x["time_sec"]
         )
         self.setpoint_index = 0
+
+        # Sensor noise: relative std (e.g. 0.015 = 1.5%), reproducible via seed
+        self.sensor_noise_pct = float(scenario.get("sensor_noise_pct", 1.5))
+    
+    def _add_sensor_noise(self, signals: Dict[str, float]) -> None:
+        """Add Gaussian noise to sensor readings in-place (more realistic telemetry)."""
+        if self.sensor_noise_pct <= 0:
+            return
+        scale = self.sensor_noise_pct / 100.0
+        for key, value in list(signals.items()):
+            base = abs(value) + 1e-9
+            sigma = scale * base
+            signals[key] = value + np.random.normal(0, sigma)
+        # Clamp to physical bounds
+        signals["pressure_bar"] = max(0.0, signals["pressure_bar"])
+        signals["flow_m3h"] = max(0.0, signals["flow_m3h"])
+        signals["temp_c"] = max(-50.0, min(200.0, signals["temp_c"]))
+        signals["bearing_temp_c"] = max(-50.0, min(150.0, signals["bearing_temp_c"]))
+        signals["vibration_rms"] = max(0.0, signals["vibration_rms"])
+        signals["rpm"] = max(1.0, signals["rpm"])
+        signals["motor_current_a"] = max(0.0, signals["motor_current_a"])
+        signals["valve_open_pct"] = max(0.0, min(100.0, signals["valve_open_pct"]))
     
     def step(self, dt: float) -> Optional[Telemetry]:
         """
@@ -144,6 +166,8 @@ class ScenarioExecutor:
         
         # Apply sensor faults
         sensor_signals = self.fault_injector.apply_sensor_faults(true_signals)
+        # Add realistic sensor noise (reproducible via scenario seed)
+        self._add_sensor_noise(sensor_signals)
         
         # Get ground truth
         truth_dict = self.fault_injector.get_ground_truth()

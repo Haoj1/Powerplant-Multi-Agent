@@ -1,3 +1,6 @@
+# SQLite (local query/dashboard DB)
+data/*.db
+
 # Python
 __pycache__/
 *.py[cod]
@@ -78,3 +81,4 @@ tmp/
 temp/
 *.tmp
 .cache/
+COMMANDS.md

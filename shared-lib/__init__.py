@@ -8,6 +8,8 @@ from .models import (
     DiagnosisEvidence,
     Ticket,
     Feedback,
+    VisionDescription,
+    VisionImageReady,
 )
 from .config import Settings, get_settings
 from .utils import (
@@ -25,6 +27,8 @@ __all__ = [
     "DiagnosisEvidence",
     "Ticket",
     "Feedback",
+    "VisionDescription",
+    "VisionImageReady",
     "Settings",
     "get_settings",
     "get_current_timestamp",

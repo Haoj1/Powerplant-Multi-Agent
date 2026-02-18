@@ -157,3 +157,26 @@ class Feedback(BaseModel):
     review_decision: ReviewDecision = Field(..., description="Review decision")
     final_root_cause: Optional[str] = Field(None, description="Final root cause after review")
     notes: Optional[str] = Field(None, description="Review notes")
+
+
+# ============================================================================
+# Vision Model (for multimodal)
+# ============================================================================
+
+class VisionImageReady(BaseModel):
+    """Published by Simulator: new image saved, no VLM yet. Agents use image_path to call VLM when needed."""
+    ts: datetime = Field(..., description="Timestamp")
+    plant_id: str = Field(..., description="Plant identifier")
+    asset_id: str = Field(..., description="Asset identifier")
+    image_path: str = Field(..., description="Path to the saved image (agent can call VLM with this when needed)")
+
+
+class VisionDescription(BaseModel):
+    """Vision analysis result from VLM (produced by an agent when it calls VLM for reasoning)."""
+    ts: datetime = Field(..., description="Timestamp")
+    plant_id: str = Field(..., description="Plant identifier")
+    asset_id: str = Field(..., description="Asset identifier")
+    description: str = Field(..., description="VLM-generated description of the visualization")
+    anomalies_detected: List[str] = Field(default_factory=list, description="Detected anomalies from vision")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence in vision analysis")
+    image_path: Optional[str] = Field(None, description="Path to the analyzed image")

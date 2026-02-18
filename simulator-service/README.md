@@ -101,9 +101,11 @@ Telemetry format follows `shared-lib/models.py` Telemetry schema:
 
 Telemetry is also logged to `logs/telemetry.jsonl` for evaluation.
 
-## References
+## References (English literature)
 
-- Reeh, N., Manthei, G., & Klar, P. J. (2023). Physical Modelling of the Set of Performance Curves for Radial Centrifugal Pumps. Applied System Innovation, 6(6), 111.
-- Darcy-Weisbach equation (standard fluid mechanics)
-- IEEE PHM: Vibration-based bearing health indicators
-- ISO 20816: Mechanical vibration evaluation
+- Reeh, N., Manthei, G., & Klar, P. J. (2023). Physical Modelling of the Set of Performance Curves for Radial Centrifugal Pumps. *Applied System Innovation*, 6(6), 111.
+- Darcy–Weisbach equation (standard fluid mechanics, e.g. White, F.M. *Fluid Mechanics*).
+- IEEE PHM: Vibration-based bearing health indicators.
+- ISO 20816: Mechanical vibration – evaluation of machine vibration.
+
+The 3D visualization (`visualization/pump_renderer.py`) uses the same physical parameters (pipe diameter/length, nominal flow/head) to scale geometry so proportions are consistent with these models.

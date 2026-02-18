@@ -3,12 +3,18 @@
 from functools import lru_cache
 from typing import Optional
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
-    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",  # ignore unknown env vars so they don't cause ValidationError
+    )
+
     # MQTT Configuration
     mqtt_host: str = "localhost"
     mqtt_port: int = 1883
@@ -28,6 +34,9 @@ class Settings(BaseSettings):
     
     # Logging
     log_dir: str = "logs"
+
+    # SQLite (for querying and dashboard; JSONL logs are kept as-is)
+    sqlite_path: str = "data/monitoring.db"
     
     # Simulator Configuration
     simulator_frequency_hz: float = 1.0
@@ -35,10 +44,18 @@ class Settings(BaseSettings):
     # Agent Monitor Configuration
     monitor_window_sec: int = 120
     
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    # VLM Configuration (for multimodal vision)
+    vlm_provider: str = "claude"  # "claude" or "openai"
+    anthropic_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    vision_frequency_sec: int = 5  # Generate vision description every N seconds
+    
+    # MQTT Topics (extended)
+    mqtt_topic_vision: str = "vision"  # Vision descriptions
+    
+    # DeepSeek (optional, for Agent B / LLM)
+    deepseek_api_key: Optional[str] = None
+    deepseek_base_url: Optional[str] = None
 
 
 @lru_cache()

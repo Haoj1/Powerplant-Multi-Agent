@@ -14,7 +14,7 @@ if not _shared_lib_path.is_dir():
     raise ImportError(f"shared-lib directory not found: {_shared_lib_path}")
 
 # Load each module from shared-lib into shared_lib.*
-for _name in ("config", "models", "utils"):
+for _name in ("config", "models", "utils", "db"):
     _file = _shared_lib_path / f"{_name}.py"
     if not _file.exists():
         continue
@@ -24,4 +24,4 @@ for _name in ("config", "models", "utils"):
     _spec.loader.exec_module(_mod)
     setattr(sys.modules[__name__], _name, _mod)
 
-__all__ = ["models", "config", "utils"]
+__all__ = ["models", "config", "utils", "db"]

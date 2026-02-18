@@ -17,5 +17,12 @@ python-dotenv>=1.0.0
 # Numerical computation (required for simulator)
 numpy>=1.26.0
 
+# 3D visualization (for multimodal)
+pyvista>=0.43.0
+
+# VLM API clients (for multimodal vision)
+anthropic>=0.18.0  # Claude Vision
+# openai>=1.12.0    # OpenAI GPT-4V (alternative)
+
 # Optional: For advanced anomaly detection
 # scikit-learn>=1.3.0
