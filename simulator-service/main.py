@@ -110,11 +110,13 @@ def simulation_loop():
     frequency_hz = settings.simulator_frequency_hz
     dt = 1.0 / frequency_hz
     vision_interval = settings.vision_frequency_sec
+    db_interval = getattr(settings, "db_telemetry_interval_sec", 0.0) or 0.0
 
     log_dir = ensure_log_dir(settings.log_dir)
     telemetry_log_path = log_dir / "telemetry.jsonl"
     global current_sim_time
     current_sim_time = 0.0
+    last_db_telemetry_time = -1.0
 
     while running and executor:
         try:
@@ -138,8 +140,10 @@ def simulation_loop():
                 append_jsonl(telemetry_log_path, telemetry.model_dump())
             except Exception as e:
                 print(f"Warning: Log write error: {e}")
-            # SQLite (for querying/dashboard)
-            if shared_db:
+            # SQLite (for querying/dashboard); optional sampling when db_telemetry_interval_sec > 0
+            if shared_db and (db_interval <= 0 or current_sim_time - last_db_telemetry_time >= db_interval):
+                if db_interval > 0:
+                    last_db_telemetry_time = current_sim_time
                 try:
                     s = telemetry.signals
                     t = telemetry.truth

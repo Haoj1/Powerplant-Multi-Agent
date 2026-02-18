@@ -68,12 +68,13 @@ def insert_alert(
     asset_id: str,
     severity: str,
     alerts_list: List[Dict[str, Any]],
-) -> None:
-    """Insert one row per alert detail, or one row with first alert and rest in evidence."""
+) -> Optional[int]:
+    """Insert one row per alert detail. Returns the id of the first inserted row (for Agent B linkage), or None."""
     with _lock:
         conn = get_connection()
+        first_id = None
         try:
-            for a in alerts_list:
+            for i, a in enumerate(alerts_list):
                 conn.execute(
                     """INSERT INTO alerts (ts, plant_id, asset_id, severity, signal, score, method, evidence)
                        VALUES (?,?,?,?,?,?,?,?)""",
@@ -83,7 +84,10 @@ def insert_alert(
                         json.dumps(a.get("evidence")) if a.get("evidence") else None,
                     ),
                 )
+                if i == 0:
+                    first_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
             conn.commit()
+            return first_id
         finally:
             conn.close()
 
@@ -175,6 +179,100 @@ def insert_ticket(
                 (ts, plant_id, asset_id, ticket_id, title, body, status, diagnosis_id),
             )
             conn.commit()
+        finally:
+            conn.close()
+
+
+def query_telemetry(
+    asset_id: str,
+    since_ts: Optional[str] = None,
+    limit: int = 100,
+) -> List[Dict[str, Any]]:
+    """Query telemetry for an asset, optionally since a timestamp. Returns list of dicts."""
+    with _lock:
+        conn = get_connection()
+        try:
+            if since_ts:
+                cur = conn.execute(
+                    """SELECT ts, plant_id, asset_id, pressure_bar, flow_m3h, temp_c, bearing_temp_c,
+                              vibration_rms, rpm, motor_current_a, valve_open_pct, fault, severity
+                       FROM telemetry WHERE asset_id = ? AND ts >= ?
+                       ORDER BY ts DESC LIMIT ?""",
+                    (asset_id, since_ts, limit),
+                )
+            else:
+                cur = conn.execute(
+                    """SELECT ts, plant_id, asset_id, pressure_bar, flow_m3h, temp_c, bearing_temp_c,
+                              vibration_rms, rpm, motor_current_a, valve_open_pct, fault, severity
+                       FROM telemetry WHERE asset_id = ?
+                       ORDER BY ts DESC LIMIT ?""",
+                    (asset_id, limit),
+                )
+            rows = cur.fetchall()
+            cols = [c[0] for c in cur.description]
+            return [dict(zip(cols, r)) for r in rows]
+        finally:
+            conn.close()
+
+
+def query_alerts(
+    asset_id: str,
+    limit: int = 20,
+    since_ts: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Query recent alerts for an asset. Returns list of dicts."""
+    with _lock:
+        conn = get_connection()
+        try:
+            if since_ts:
+                cur = conn.execute(
+                    """SELECT id, ts, plant_id, asset_id, severity, signal, score, method, evidence
+                       FROM alerts WHERE asset_id = ? AND ts >= ?
+                       ORDER BY ts DESC LIMIT ?""",
+                    (asset_id, since_ts, limit),
+                )
+            else:
+                cur = conn.execute(
+                    """SELECT id, ts, plant_id, asset_id, severity, signal, score, method, evidence
+                       FROM alerts WHERE asset_id = ?
+                       ORDER BY ts DESC LIMIT ?""",
+                    (asset_id, limit),
+                )
+            rows = cur.fetchall()
+            cols = [c[0] for c in cur.description]
+            result = [dict(zip(cols, r)) for r in rows]
+            for r in result:
+                if r.get("evidence") and isinstance(r["evidence"], str):
+                    try:
+                        r["evidence"] = json.loads(r["evidence"])
+                    except Exception:
+                        pass
+            return result
+        finally:
+            conn.close()
+
+
+def get_alert_by_id(alert_id: int) -> Optional[Dict[str, Any]]:
+    """Get a single alert by id."""
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.execute(
+                """SELECT id, ts, plant_id, asset_id, severity, signal, score, method, evidence
+                   FROM alerts WHERE id = ?""",
+                (alert_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            cols = [c[0] for c in cur.description]
+            r = dict(zip(cols, row))
+            if r.get("evidence") and isinstance(r["evidence"], str):
+                try:
+                    r["evidence"] = json.loads(r["evidence"])
+                except Exception:
+                    pass
+            return r
         finally:
             conn.close()
 

@@ -68,7 +68,7 @@ CREATE INDEX IF NOT EXISTS ix_alerts_ts ON alerts(ts);
 CREATE INDEX IF NOT EXISTS ix_alerts_ts_asset ON alerts(ts, asset_id);
 CREATE INDEX IF NOT EXISTS ix_alerts_severity ON alerts(severity);
 
--- Diagnosis (from Agent B; alert_id = which alert triggered this diagnosis)
+-- Diagnosis (from Agent B; alert_id added by migration below for new + existing DBs)
 CREATE TABLE IF NOT EXISTS diagnosis (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ts TEXT NOT NULL,
@@ -79,15 +79,12 @@ CREATE TABLE IF NOT EXISTS diagnosis (
     impact TEXT,
     recommended_actions TEXT,
     evidence TEXT,
-    alert_id INTEGER,
-    created_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (alert_id) REFERENCES alerts(id)
+    created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS ix_diagnosis_asset_ts ON diagnosis(asset_id, ts);
 CREATE INDEX IF NOT EXISTS ix_diagnosis_ts ON diagnosis(ts);
 CREATE INDEX IF NOT EXISTS ix_diagnosis_ts_asset ON diagnosis(ts, asset_id);
 CREATE INDEX IF NOT EXISTS ix_diagnosis_root_cause ON diagnosis(root_cause);
-CREATE INDEX IF NOT EXISTS ix_diagnosis_alert_id ON diagnosis(alert_id);
 
 -- Vision images (from Simulator: image path only)
 CREATE TABLE IF NOT EXISTS vision_images (
@@ -164,9 +161,10 @@ def _migrate_diagnosis_alert_id(conn):
     cols = [row[1] for row in cur.fetchall()]
     if "alert_id" not in cols:
         conn.execute("ALTER TABLE diagnosis ADD COLUMN alert_id INTEGER REFERENCES alerts(id)")
-        conn.execute("CREATE INDEX IF NOT EXISTS ix_diagnosis_alert_id ON diagnosis(alert_id)")
         conn.commit()
-        print("Migration: added diagnosis.alert_id and index")
+        print("Migration: added diagnosis.alert_id")
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_diagnosis_alert_id ON diagnosis(alert_id)")
+    conn.commit()
 
 
 def main():

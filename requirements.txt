@@ -24,5 +24,11 @@ pyvista>=0.43.0
 anthropic>=0.18.0  # Claude Vision
 # openai>=1.12.0    # OpenAI GPT-4V (alternative)
 
+# Agent B / LangChain ReAct
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-openai>=0.2.0
+langgraph>=0.2.0
+
 # Optional: For advanced anomaly detection
 # scikit-learn>=1.3.0

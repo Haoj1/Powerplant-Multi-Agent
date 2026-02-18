@@ -37,7 +37,9 @@ class Settings(BaseSettings):
 
     # SQLite (for querying and dashboard; JSONL logs are kept as-is)
     sqlite_path: str = "data/monitoring.db"
-    
+    # Only write telemetry to DB every N seconds (0 = every sim step). Reduces DB rows when sim is high-frequency.
+    db_telemetry_interval_sec: float = 0.0
+
     # Simulator Configuration
     simulator_frequency_hz: float = 1.0
     
@@ -56,6 +58,11 @@ class Settings(BaseSettings):
     # DeepSeek (optional, for Agent B / LLM)
     deepseek_api_key: Optional[str] = None
     deepseek_base_url: Optional[str] = None
+
+    # Agent B (Diagnosis)
+    diagnosis_rules_path: str = "agent-diagnosis/rules"
+    # Min seconds between producing diagnoses (global cooldown to prevent pile-up)
+    diagnosis_cooldown_sec: float = 20.0
 
 
 @lru_cache()

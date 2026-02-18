@@ -40,7 +40,7 @@ Writes happen **in addition to** existing JSONL/MQTT; logs are not replaced.
 
 | Component     | When it writes | Table(s)        |
 |--------------|----------------|-----------------|
-| **Simulator**| After each telemetry publish and JSONL append | `telemetry` |
+| **Simulator**| After each telemetry publish and JSONL append (or every `DB_TELEMETRY_INTERVAL_SEC` sec if set) | `telemetry` |
 | **Simulator**| After each vision image save + MQTT publish   | `vision_images` |
 | **Agent A**  | After each alert publish + JSONL append      | `alerts` |
 | **Agent B**  | After each diagnosis publish                 | `diagnosis` (when implemented) |
@@ -69,3 +69,4 @@ SELECT severity, COUNT(*) FROM alerts GROUP BY severity;
 In `.env`:
 
 - `SQLITE_PATH=data/monitoring.db` — path to the DB file (relative to project root or absolute).
+- `DB_TELEMETRY_INTERVAL_SEC=0` — write telemetry to DB every N seconds; `0` = every sim step (default). Set to e.g. `5` or `10` to reduce `telemetry` table growth (MQTT and JSONL are unchanged).

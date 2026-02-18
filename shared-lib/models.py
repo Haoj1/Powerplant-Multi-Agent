@@ -106,6 +106,7 @@ class AlertEvent(BaseModel):
     asset_id: str = Field(..., description="Asset identifier")
     severity: Severity = Field(..., description="Alert severity")
     alerts: List[AlertDetail] = Field(..., description="List of alert details")
+    alert_id: Optional[int] = Field(None, description="DB alert id for Agent B linkage")
 
 
 # ============================================================================

@@ -77,19 +77,21 @@ def on_telemetry(topic: str, payload: dict):
     if alert and alert_publisher:
         with _stats_lock:
             stats["alerts_generated"] += 1
-        try:
-            alert_publisher.publish(alert, append_jsonl)
-        except Exception as e:
-            print(f"[Agent A] Publish error: {e}")
+        primary_alert_id = None
         if shared_db:
             try:
-                shared_db.insert_alert(
+                primary_alert_id = shared_db.insert_alert(
                     ts=str(alert.ts), plant_id=alert.plant_id, asset_id=alert.asset_id,
                     severity=alert.severity.value if hasattr(alert.severity, "value") else str(alert.severity),
                     alerts_list=[a.model_dump() for a in alert.alerts],
                 )
             except Exception as e:
                 print(f"[Agent A] DB alert write error: {e}")
+        alert_for_publish = alert.model_copy(update={"alert_id": primary_alert_id})
+        try:
+            alert_publisher.publish(alert_for_publish, append_jsonl)
+        except Exception as e:
+            print(f"[Agent A] Publish error: {e}")
 
 
 @app.on_event("startup")
