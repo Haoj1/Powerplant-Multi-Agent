@@ -8,23 +8,26 @@ function ChatLayout({ sessions, currentSession, onSelectSession, onNewSession, o
   const [input, setInput] = useState('')
   const [streamingMessage, setStreamingMessage] = useState(null)
   const [streamingSteps, setStreamingSteps] = useState([])
+  const [pendingUserMessage, setPendingUserMessage] = useState(null)
   const [error, setError] = useState('')
   const messagesEndRef = useRef(null)
 
   const messages = currentSession?.conversation_history ?? currentSession?.session?.messages ?? []
   const sessionId = currentSession?.session?.id ?? null
+  const isLoading = pendingUserMessage != null && streamingMessage === null
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streamingMessage, streamingSteps])
+  }, [messages, streamingMessage, streamingSteps, pendingUserMessage])
 
   const handleSend = async () => {
     const question = input.trim()
-    if (!question || streamingMessage !== null) return
+    if (!question || pendingUserMessage != null) return
     setInput('')
     setError('')
     setStreamingSteps([])
-    setStreamingMessage('')
+    setStreamingMessage(null)
+    setPendingUserMessage(question)
 
     const history = messages.map((m) => ({
       role: m.role,
@@ -50,6 +53,7 @@ function ChatLayout({ sessions, currentSession, onSelectSession, onNewSession, o
       )
       setStreamingMessage(null)
       setStreamingSteps([])
+      setPendingUserMessage(null)
       if (onSessionUpdate) onSessionUpdate()
       const idToSelect = newSessionId != null ? newSessionId : sessionId
       if (idToSelect != null && onSelectSession) onSelectSession(idToSelect)
@@ -57,6 +61,7 @@ function ChatLayout({ sessions, currentSession, onSelectSession, onNewSession, o
       setError(e?.message || 'Send failed')
       setStreamingMessage(null)
       setStreamingSteps([])
+      setPendingUserMessage(null)
     }
   }
 
@@ -86,7 +91,7 @@ function ChatLayout({ sessions, currentSession, onSelectSession, onNewSession, o
 
       <div className="chat-main">
         <div className="chat-messages">
-          {messages.length === 0 && !streamingMessage && !streamingSteps.length && (
+          {messages.length === 0 && !streamingMessage && !streamingSteps.length && !pendingUserMessage && (
             <div className="chat-empty">
               {currentSession ? 'No messages in this session yet.' : 'Select a session or start a new chat.'}
             </div>
@@ -118,6 +123,26 @@ function ChatLayout({ sessions, currentSession, onSelectSession, onNewSession, o
               )}
             </div>
           ))}
+          {pendingUserMessage != null && (
+            <div className="message message-user">
+              <div className="message-role">You</div>
+              <div className="message-content">
+                <span>{pendingUserMessage}</span>
+              </div>
+            </div>
+          )}
+          {isLoading && streamingSteps.length === 0 && (
+            <div className="message message-assistant message-loading">
+              <div className="message-role">Assistant</div>
+              <div className="message-content message-loading-content">
+                <span className="typing-dots">
+                  <span className="dot" />
+                  <span className="dot" />
+                  <span className="dot" />
+                </span>
+              </div>
+            </div>
+          )}
           {streamingSteps.length > 0 && (
             <div className="message message-assistant streaming-steps">
               <div className="message-role">Assistant</div>
@@ -162,13 +187,13 @@ function ChatLayout({ sessions, currentSession, onSelectSession, onNewSession, o
             }}
             placeholder="Ask about reviews, diagnoses, or sensors..."
             rows={2}
-            disabled={!!streamingMessage}
+            disabled={!!pendingUserMessage}
           />
           <button
             type="button"
             className="btn-send"
             onClick={handleSend}
-            disabled={!input.trim() || streamingMessage !== null}
+            disabled={!input.trim() || pendingUserMessage != null}
           >
             Send
           </button>
