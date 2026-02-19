@@ -2,6 +2,8 @@
   "version": "1.0",
   "name": "test_alert_quick",
   "description": "Quick test scenario - high pressure/current to trigger alerts",
+  "plant_id": "plant01",
+  "asset_id": "pump01",
   "seed": 12345,
   "duration_sec": 120,
   "initial_conditions": {

@@ -2,6 +2,8 @@
   "version": "1.0",
   "name": "bearing_wear_chronic",
   "description": "Chronic bearing wear - gradual degradation over time",
+  "plant_id": "plant01",
+  "asset_id": "pump01",
   "seed": 12345,
   "duration_sec": 3600,
   "initial_conditions": {

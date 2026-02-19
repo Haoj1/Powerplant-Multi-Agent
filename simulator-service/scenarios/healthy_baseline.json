@@ -2,6 +2,8 @@
   "version": "1.0",
   "name": "healthy_baseline",
   "description": "Healthy pump operation with no faults",
+  "plant_id": "plant01",
+  "asset_id": "pump01",
   "seed": 12345,
   "duration_sec": 600,
   "initial_conditions": {

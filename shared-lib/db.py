@@ -210,14 +210,15 @@ def insert_ticket(
     body: str = "",
     status: str = "open",
     diagnosis_id: Optional[int] = None,
+    url: Optional[str] = None,
 ) -> None:
     with _lock:
         conn = get_connection()
         try:
             conn.execute(
-                """INSERT INTO tickets (ts, plant_id, asset_id, ticket_id, title, body, status, diagnosis_id)
-                   VALUES (?,?,?,?,?,?,?,?)""",
-                (ts, plant_id, asset_id, ticket_id, title, body, status, diagnosis_id),
+                """INSERT INTO tickets (ts, plant_id, asset_id, ticket_id, title, body, status, diagnosis_id, url)
+                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                (ts, plant_id, asset_id, ticket_id, title, body, status, diagnosis_id, url),
             )
             conn.commit()
         finally:
@@ -293,6 +294,69 @@ def query_alerts(
             conn.close()
 
 
+def get_diagnosis_by_id(diagnosis_id: int) -> Optional[Dict[str, Any]]:
+    """Get a single diagnosis by id."""
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.execute(
+                """SELECT id, ts, plant_id, asset_id, root_cause, confidence, impact,
+                          recommended_actions, evidence, alert_id
+                   FROM diagnosis WHERE id = ?""",
+                (diagnosis_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            cols = [c[0] for c in cur.description]
+            r = dict(zip(cols, row))
+            for key in ("recommended_actions", "evidence"):
+                if r.get(key) and isinstance(r[key], str):
+                    try:
+                        r[key] = json.loads(r[key])
+                    except Exception:
+                        pass
+            return r
+        finally:
+            conn.close()
+
+
+def query_alerts_with_diagnosis_and_ticket(
+    asset_id: Optional[str] = None,
+    limit: int = 50,
+) -> List[Dict[str, Any]]:
+    """Query alerts with linked diagnosis_id and ticket_id (for Agent D Alerts list)."""
+    with _lock:
+        conn = get_connection()
+        try:
+            if asset_id:
+                cur = conn.execute(
+                    """SELECT a.id as alert_id, a.ts, a.plant_id, a.asset_id, a.severity, a.signal, a.score,
+                              d.id as diagnosis_id, t.id as ticket_row_id, t.ticket_id, t.url as ticket_url
+                       FROM alerts a
+                       LEFT JOIN diagnosis d ON d.alert_id = a.id
+                       LEFT JOIN tickets t ON t.diagnosis_id = d.id
+                       WHERE a.asset_id = ?
+                       ORDER BY a.ts DESC LIMIT ?""",
+                    (asset_id, limit),
+                )
+            else:
+                cur = conn.execute(
+                    """SELECT a.id as alert_id, a.ts, a.plant_id, a.asset_id, a.severity, a.signal, a.score,
+                              d.id as diagnosis_id, t.id as ticket_row_id, t.ticket_id, t.url as ticket_url
+                       FROM alerts a
+                       LEFT JOIN diagnosis d ON d.alert_id = a.id
+                       LEFT JOIN tickets t ON t.diagnosis_id = d.id
+                       ORDER BY a.ts DESC LIMIT ?""",
+                    (limit,),
+                )
+            rows = cur.fetchall()
+            cols = [c[0] for c in cur.description]
+            return [dict(zip(cols, r)) for r in rows]
+        finally:
+            conn.close()
+
+
 def get_alert_by_id(alert_id: int) -> Optional[Dict[str, Any]]:
     """Get a single alert by id."""
     with _lock:
@@ -314,6 +378,169 @@ def get_alert_by_id(alert_id: int) -> Optional[Dict[str, Any]]:
                 except Exception:
                     pass
             return r
+        finally:
+            conn.close()
+
+
+def insert_chat_session(preview: Optional[str] = None) -> int:
+    """Create chat session, return session id."""
+    with _lock:
+        conn = get_connection()
+        try:
+            conn.execute(
+                "INSERT INTO chat_sessions (preview) VALUES (?)",
+                (preview or "",),
+            )
+            row_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            conn.commit()
+            return row_id
+        finally:
+            conn.close()
+
+
+def update_chat_session(session_id: int, preview: Optional[str] = None) -> None:
+    """Update session updated_at and optionally preview."""
+    with _lock:
+        conn = get_connection()
+        try:
+            if preview is not None:
+                conn.execute(
+                    "UPDATE chat_sessions SET updated_at = datetime('now'), preview = ? WHERE id = ?",
+                    (preview[:200] if preview else "", session_id),
+                )
+            else:
+                conn.execute(
+                    "UPDATE chat_sessions SET updated_at = datetime('now') WHERE id = ?",
+                    (session_id,),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def insert_chat_message(
+    session_id: int,
+    role: str,
+    content: str,
+    tool_calls: Optional[str] = None,
+) -> int:
+    """Insert chat message, return message id."""
+    with _lock:
+        conn = get_connection()
+        try:
+            conn.execute(
+                """INSERT INTO chat_messages (session_id, role, content, tool_calls)
+                   VALUES (?,?,?,?)""",
+                (session_id, role, content, tool_calls),
+            )
+            row_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            conn.commit()
+            return row_id
+        finally:
+            conn.close()
+
+
+def update_chat_message_content(message_id: int, content: str) -> None:
+    """Update chat message content."""
+    with _lock:
+        conn = get_connection()
+        try:
+            conn.execute("UPDATE chat_messages SET content = ? WHERE id = ?", (content, message_id))
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def insert_chat_step(
+    message_id: int,
+    step_type: str,
+    step_order: int,
+    tool_name: Optional[str] = None,
+    tool_args: Optional[str] = None,
+    content: Optional[str] = None,
+    raw_result: Optional[str] = None,
+) -> None:
+    """Insert a ReAct step for a message."""
+    with _lock:
+        conn = get_connection()
+        try:
+            conn.execute(
+                """INSERT INTO chat_steps (message_id, step_type, step_order, tool_name, tool_args, content, raw_result)
+                   VALUES (?,?,?,?,?,?,?)""",
+                (message_id, step_type, step_order, tool_name, tool_args, content, raw_result),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def list_chat_sessions(limit: int = 20) -> List[Dict[str, Any]]:
+    """List chat sessions by updated_at desc."""
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.execute(
+                "SELECT id, created_at, updated_at, preview FROM chat_sessions ORDER BY updated_at DESC LIMIT ?",
+                (limit,),
+            )
+            rows = cur.fetchall()
+            cols = [c[0] for c in cur.description]
+            return [dict(zip(cols, r)) for r in rows]
+        finally:
+            conn.close()
+
+
+def get_chat_session_with_messages(session_id: int) -> Optional[Dict[str, Any]]:
+    """Get session with messages and steps. Returns None if not found."""
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.execute(
+                "SELECT id, created_at, updated_at, preview FROM chat_sessions WHERE id = ?",
+                (session_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            cols = [c[0] for c in cur.description]
+            session = dict(zip(cols, row))
+            cur = conn.execute(
+                "SELECT id, role, content, tool_calls, created_at FROM chat_messages WHERE session_id = ? ORDER BY id",
+                (session_id,),
+            )
+            msg_rows = cur.fetchall()
+            msg_cols = [c[0] for c in cur.description]
+            messages = [dict(zip(msg_cols, r)) for r in msg_rows]
+            for m in messages:
+                if m.get("tool_calls") and isinstance(m["tool_calls"], str):
+                    try:
+                        m["tool_calls"] = json.loads(m["tool_calls"])
+                    except Exception:
+                        pass
+                cur = conn.execute(
+                    """SELECT step_type, step_order, tool_name, tool_args, content, raw_result
+                       FROM chat_steps WHERE message_id = ? ORDER BY step_order""",
+                    (m["id"],),
+                )
+                step_rows = cur.fetchall()
+                step_cols = [c[0] for c in cur.description]
+                m["steps"] = [dict(zip(step_cols, r)) for r in step_rows]
+            session["messages"] = messages
+            return session
+        finally:
+            conn.close()
+
+
+def update_review_request_status(review_id: int, status: str) -> None:
+    """Update review_request status and set resolved_at to now (e.g. approved, rejected)."""
+    with _lock:
+        conn = get_connection()
+        try:
+            conn.execute(
+                "UPDATE review_requests SET status = ?, resolved_at = datetime('now') WHERE id = ?",
+                (status, review_id),
+            )
+            conn.commit()
         finally:
             conn.close()
 

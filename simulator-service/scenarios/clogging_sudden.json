@@ -2,6 +2,8 @@
   "version": "1.0",
   "name": "clogging_sudden",
   "description": "Sudden clogging - step increase in pipe resistance",
+  "plant_id": "plant01",
+  "asset_id": "pump01",
   "seed": 12345,
   "duration_sec": 1800,
   "initial_conditions": {

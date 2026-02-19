@@ -25,6 +25,11 @@ try:
 except ImportError:
     shared_db = None
 
+try:
+    from shared_lib.vector_indexing import index_alert
+except ImportError:
+    index_alert = None
+
 from mqtt import MQTTSubscriber, AlertPublisher
 from detection import ThresholdDetector
 
@@ -85,6 +90,18 @@ def on_telemetry(topic: str, payload: dict):
                     severity=alert.severity.value if hasattr(alert.severity, "value") else str(alert.severity),
                     alerts_list=[a.model_dump() for a in alert.alerts],
                 )
+                # Index alert to vector DB for RAG
+                if primary_alert_id and index_alert:
+                    alert_data = {
+                        "asset_id": alert.asset_id,
+                        "plant_id": alert.plant_id,
+                        "severity": alert.severity.value if hasattr(alert.severity, "value") else str(alert.severity),
+                        "signal": alert.alerts[0].signal if alert.alerts else "",
+                        "score": alert.alerts[0].score if alert.alerts else 0.0,
+                        "method": alert.alerts[0].method if alert.alerts else "",
+                        "evidence": alert.alerts[0].evidence if alert.alerts else {},
+                    }
+                    index_alert(primary_alert_id, alert_data)
             except Exception as e:
                 print(f"[Agent A] DB alert write error: {e}")
         alert_for_publish = alert.model_copy(update={"alert_id": primary_alert_id})

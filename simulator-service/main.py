@@ -23,10 +23,11 @@ except Exception:
 import asyncio
 import threading
 import time
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, Tuple
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from shared_lib.config import get_settings
 from shared_lib.utils import append_jsonl, ensure_log_dir
@@ -40,7 +41,7 @@ from scenarios import ScenarioLoader, ScenarioExecutor
 from mqtt import MQTTPublisher
 from mqtt.vision_publisher import VisionPublisher
 from visualization import PumpRenderer
-from shared_lib.models import VisionImageReady
+from shared_lib.models import VisionImageReady, AlertEvent, AlertDetail, Severity
 from shared_lib.utils import get_current_timestamp
 
 
@@ -52,22 +53,34 @@ app = FastAPI(
 
 # Global state
 settings = get_settings()
-executor: Optional[ScenarioExecutor] = None
+executors: Dict[str, ScenarioExecutor] = {}  # asset_id -> executor
 mqtt_publisher: Optional[MQTTPublisher] = None
 vision_publisher: Optional[VisionPublisher] = None
 renderer: Optional[PumpRenderer] = None
-simulation_thread: Optional[threading.Thread] = None
-running = False
-last_vision_time = 0.0
-current_sim_time = 0.0
+simulation_threads: Dict[str, threading.Thread] = {}  # asset_id -> thread
+running: Dict[str, bool] = {}  # asset_id -> running status
+last_vision_time: Dict[str, float] = {}  # asset_id -> last vision time
+current_sim_time: Dict[str, float] = {}  # asset_id -> current sim time
 # Vision must run on main thread (macOS PyVista/VTK); sim thread only enqueues.
 _vision_pending: Optional[Tuple[Any, float]] = None  # (telemetry, sim_time) or None
 _vision_lock = threading.Lock()
+_executors_lock = threading.Lock()  # Lock for executors dict
 
 
 class ScenarioRequest(BaseModel):
     """Request model for loading scenario."""
     scenario: Dict[str, Any]
+
+
+class TriggerAlertRequest(BaseModel):
+    """Request model for manually triggering an alert."""
+    asset_id: str = Field(..., description="Asset ID (e.g., pump01)")
+    plant_id: str = Field(default="plant01", description="Plant ID")
+    signal: str = Field(..., description="Signal name (e.g., vibration_rms, bearing_temp_c)")
+    severity: str = Field(default="warning", description="Severity: warning or critical")
+    score: float = Field(default=3.5, description="Anomaly score")
+    method: str = Field(default="manual", description="Detection method")
+    evidence: Dict[str, Any] = Field(default_factory=dict, description="Additional evidence")
 
 
 def load_pump_config() -> Dict[str, Any]:
@@ -100,12 +113,14 @@ def load_pump_config() -> Dict[str, Any]:
     }
 
 
-def simulation_loop():
-    """Main simulation loop running in background thread."""
-    global executor, mqtt_publisher, vision_publisher, renderer, running, last_vision_time, _vision_pending
+def simulation_loop(asset_id: str):
+    """Main simulation loop running in background thread for a specific asset."""
+    global executors, mqtt_publisher, vision_publisher, renderer, running, last_vision_time, _vision_pending, current_sim_time
 
-    if not executor:
-        return
+    with _executors_lock:
+        executor = executors.get(asset_id)
+        if not executor:
+            return
 
     frequency_hz = settings.simulator_frequency_hz
     dt = 1.0 / frequency_hz
@@ -114,11 +129,15 @@ def simulation_loop():
 
     log_dir = ensure_log_dir(settings.log_dir)
     telemetry_log_path = log_dir / "telemetry.jsonl"
-    global current_sim_time
-    current_sim_time = 0.0
+    
+    if asset_id not in current_sim_time:
+        current_sim_time[asset_id] = 0.0
+    if asset_id not in last_vision_time:
+        last_vision_time[asset_id] = 0.0
+    
     last_db_telemetry_time = -1.0
 
-    while running and executor:
+    while running.get(asset_id, False) and executor:
         try:
             telemetry = executor.step(dt)
 
@@ -126,7 +145,7 @@ def simulation_loop():
                 running = False
                 break
 
-            current_sim_time += dt
+            current_sim_time[asset_id] += dt
 
             # Publish telemetry
             if mqtt_publisher and mqtt_publisher.connected:
@@ -141,9 +160,9 @@ def simulation_loop():
             except Exception as e:
                 print(f"Warning: Log write error: {e}")
             # SQLite (for querying/dashboard); optional sampling when db_telemetry_interval_sec > 0
-            if shared_db and (db_interval <= 0 or current_sim_time - last_db_telemetry_time >= db_interval):
+            if shared_db and (db_interval <= 0 or current_sim_time[asset_id] - last_db_telemetry_time >= db_interval):
                 if db_interval > 0:
-                    last_db_telemetry_time = current_sim_time
+                    last_db_telemetry_time = current_sim_time[asset_id]
                 try:
                     s = telemetry.signals
                     t = telemetry.truth
@@ -159,17 +178,22 @@ def simulation_loop():
 
             # Enqueue vision work for main thread (macOS: PyVista/VTK must run on main thread)
             if (renderer and vision_publisher and
-                current_sim_time - last_vision_time >= vision_interval):
+                current_sim_time[asset_id] - last_vision_time[asset_id] >= vision_interval):
                 with _vision_lock:
-                    _vision_pending = (telemetry, current_sim_time)
-                last_vision_time = current_sim_time
+                    _vision_pending = (telemetry, current_sim_time[asset_id])
+                last_vision_time[asset_id] = current_sim_time[asset_id]
 
             time.sleep(dt)
 
         except Exception as e:
-            print(f"Error in simulation loop: {e}")
-            running = False
+            print(f"Error in simulation loop for {asset_id}: {e}")
+            running[asset_id] = False
             break
+    
+    # Cleanup when loop exits
+    with _executors_lock:
+        if asset_id in simulation_threads:
+            del simulation_threads[asset_id]
 
 
 def _run_vision_pipeline(telemetry):  # runs on main thread (required by PyVista on macOS)
@@ -255,8 +279,12 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown."""
-    global mqtt_publisher, renderer, running
-    running = False
+    global mqtt_publisher, renderer, running, executors
+    running.clear()
+    with _executors_lock:
+        for executor in executors.values():
+            executor.stop()
+        executors.clear()
     if mqtt_publisher:
         mqtt_publisher.disconnect()
     if renderer:
@@ -274,34 +302,72 @@ async def health():
 
 
 @app.get("/status")
-async def status():
-    """Get simulator status."""
-    global executor, running
-
-    if executor:
-        status_dict = executor.get_status()
-        status_dict["running"] = running
-        return status_dict
-    else:
-        return {
-            "status": "stopped",
-            "scenario_loaded": False,
-            "running": False,
-        }
+async def status(asset_id: Optional[str] = None):
+    """Get simulator status for all assets or a specific asset."""
+    global executors, running, current_sim_time
+    
+    with _executors_lock:
+        if asset_id:
+            # Single asset status
+            executor = executors.get(asset_id)
+            if executor:
+                status_dict = executor.get_status()
+                status_dict["running"] = running.get(asset_id, False)
+                status_dict["asset_id"] = asset_id
+                status_dict["current_time"] = current_sim_time.get(asset_id, 0.0)
+                return status_dict
+            else:
+                return {
+                    "status": "not_loaded",
+                    "asset_id": asset_id,
+                    "scenario_loaded": False,
+                    "running": False,
+                }
+        else:
+            # All assets status
+            all_status = []
+            for aid, executor in executors.items():
+                status_dict = executor.get_status()
+                status_dict["asset_id"] = aid
+                status_dict["running"] = running.get(aid, False)
+                status_dict["current_time"] = current_sim_time.get(aid, 0.0)
+                all_status.append(status_dict)
+            return {
+                "assets": all_status,
+                "total_assets": len(executors),
+            }
 
 
 @app.post("/scenario/load")
 async def load_scenario(request: ScenarioRequest):
-    """Load a scenario."""
-    global executor, running
+    """Load a scenario for an asset. Asset ID is read from scenario JSON."""
+    global executors, running
 
     try:
         scenario = ScenarioLoader.load_from_dict(request.scenario)
+        asset_id = scenario.get("asset_id", "pump01")
+        plant_id = scenario.get("plant_id", "plant01")
+        
+        # Stop existing scenario for this asset if running
+        if asset_id in running and running[asset_id]:
+            running[asset_id] = False
+            if asset_id in executors:
+                executors[asset_id].stop()
+        
         pump_config = load_pump_config()
         executor = ScenarioExecutor(scenario, pump_config)
+        
+        with _executors_lock:
+            executors[asset_id] = executor
+            if asset_id not in current_sim_time:
+                current_sim_time[asset_id] = 0.0
+            if asset_id not in last_vision_time:
+                last_vision_time[asset_id] = 0.0
 
         return {
             "status": "loaded",
+            "asset_id": asset_id,
+            "plant_id": plant_id,
             "scenario_name": scenario["name"],
             "duration_sec": scenario["duration_sec"],
         }
@@ -309,56 +375,157 @@ async def load_scenario(request: ScenarioRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/scenario/start")
-async def start_scenario():
-    """Start scenario execution."""
-    global executor, running, simulation_thread
+@app.post("/scenario/start/{asset_id}")
+async def start_scenario(asset_id: str):
+    """Start scenario execution for a specific asset."""
+    global executors, running, simulation_threads
 
-    if not executor:
-        raise HTTPException(status_code=400, detail="No scenario loaded")
+    with _executors_lock:
+        executor = executors.get(asset_id)
+        if not executor:
+            raise HTTPException(status_code=404, detail=f"No scenario loaded for asset {asset_id}")
 
-    if running:
-        raise HTTPException(status_code=400, detail="Simulation already running")
+        if running.get(asset_id, False):
+            raise HTTPException(status_code=400, detail=f"Simulation already running for asset {asset_id}")
 
-    executor.start()
-    running = True
+        executor.start()
+        running[asset_id] = True
 
-    simulation_thread = threading.Thread(target=simulation_loop, daemon=True)
-    simulation_thread.start()
+        thread = threading.Thread(target=simulation_loop, args=(asset_id,), daemon=True)
+        thread.start()
+        simulation_threads[asset_id] = thread
 
-    return {"status": "started"}
+    return {"status": "started", "asset_id": asset_id}
+
+
+@app.post("/scenario/stop/{asset_id}")
+async def stop_scenario(asset_id: str):
+    """Stop scenario execution for a specific asset."""
+    global running, executors
+
+    with _executors_lock:
+        if not running.get(asset_id, False):
+            return {"status": "already_stopped", "asset_id": asset_id}
+
+        running[asset_id] = False
+        if asset_id in executors:
+            executors[asset_id].stop()
+
+    return {"status": "stopped", "asset_id": asset_id}
 
 
 @app.post("/scenario/stop")
-async def stop_scenario():
-    """Stop scenario execution."""
-    global running, executor
+async def stop_all_scenarios():
+    """Stop all running scenarios."""
+    global running, executors
 
-    if not running:
-        return {"status": "already_stopped"}
+    with _executors_lock:
+        stopped = []
+        for asset_id in list(running.keys()):
+            if running[asset_id]:
+                running[asset_id] = False
+                if asset_id in executors:
+                    executors[asset_id].stop()
+                stopped.append(asset_id)
 
-    running = False
-    if executor:
-        executor.stop()
-
-    return {"status": "stopped"}
+    return {"status": "stopped", "stopped_assets": stopped}
 
 
-@app.post("/scenario/reset")
-async def reset_scenario():
-    """Reset scenario to beginning."""
-    global executor, running, last_vision_time, current_sim_time
+@app.post("/scenario/reset/{asset_id}")
+async def reset_scenario(asset_id: str):
+    """Reset scenario to beginning for a specific asset."""
+    global executors, running, last_vision_time, current_sim_time
 
-    running = False
-    if executor:
+    with _executors_lock:
+        executor = executors.get(asset_id)
+        if not executor:
+            raise HTTPException(status_code=404, detail=f"No scenario loaded for asset {asset_id}")
+
+        running[asset_id] = False
         executor.stop()
         executor.current_time = 0.0
         executor.setpoint_index = 0
-    
-    last_vision_time = 0.0
-    current_sim_time = 0.0
+        
+        last_vision_time[asset_id] = 0.0
+        current_sim_time[asset_id] = 0.0
 
-    return {"status": "reset"}
+    return {"status": "reset", "asset_id": asset_id}
+
+
+@app.post("/alert/trigger")
+async def trigger_alert(request: TriggerAlertRequest):
+    """
+    Manually trigger an alert for testing purposes.
+    Publishes alert to MQTT topic alerts/{asset_id} for Agent A to process.
+    """
+    global mqtt_publisher
+    
+    if not mqtt_publisher or not mqtt_publisher.connected:
+        raise HTTPException(status_code=503, detail="MQTT broker not connected")
+    
+    try:
+        # Create alert event
+        severity_enum = Severity.WARNING if request.severity.lower() == "warning" else Severity.CRITICAL
+        
+        alert = AlertEvent(
+            ts=datetime.now(timezone.utc),
+            plant_id=request.plant_id,
+            asset_id=request.asset_id,
+            severity=severity_enum,
+            alerts=[
+                AlertDetail(
+                    signal=request.signal,
+                    score=request.score,
+                    method=request.method,
+                    window_sec=0,  # Manual trigger
+                    evidence=request.evidence,
+                )
+            ],
+        )
+        
+        # Publish to MQTT (same topic format as Agent A uses)
+        from mqtt import AlertPublisher
+        alert_publisher = AlertPublisher(
+            mqtt_client=mqtt_publisher.client,
+            alerts_topic_prefix=settings.mqtt_topic_alerts,
+            log_dir=settings.log_dir,
+        )
+        
+        # Publish alert
+        alert_publisher.publish(alert, append_jsonl)
+        
+        return {
+            "status": "triggered",
+            "asset_id": request.asset_id,
+            "signal": request.signal,
+            "severity": request.severity,
+            "mqtt_topic": f"{settings.mqtt_topic_alerts}/{request.asset_id}",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to trigger alert: {e}")
+
+
+@app.get("/scenarios")
+async def list_scenarios():
+    """List all loaded scenarios."""
+    global executors, running, current_sim_time
+    
+    with _executors_lock:
+        scenarios = []
+        for asset_id, executor in executors.items():
+            status_dict = executor.get_status()
+            scenarios.append({
+                "asset_id": asset_id,
+                "scenario_name": status_dict.get("scenario_name", "unknown"),
+                "running": running.get(asset_id, False),
+                "current_time": current_sim_time.get(asset_id, 0.0),
+                "duration_sec": status_dict.get("duration_sec", 0),
+            })
+        
+        return {
+            "scenarios": scenarios,
+            "total": len(scenarios),
+        }
 
 
 if __name__ == "__main__":

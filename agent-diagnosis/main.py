@@ -32,6 +32,12 @@ try:
 except ImportError:
     shared_db = None
 
+try:
+    from shared_lib.vector_indexing import index_diagnosis, index_rules
+except ImportError:
+    index_diagnosis = None
+    index_rules = None
+
 from mqtt import AlertsSubscriber, DiagnosisPublisher
 from agent import run_diagnosis
 
@@ -103,6 +109,18 @@ def on_alert(topic: str, payload: dict):
                 evidence=[e.model_dump() if hasattr(e, "model_dump") else e for e in report.evidence],
                 alert_id=alert_id,
             )
+            # Index diagnosis to vector DB for RAG
+            if diagnosis_id and index_diagnosis:
+                diagnosis_data = {
+                    "asset_id": report.asset_id,
+                    "plant_id": report.plant_id,
+                    "root_cause": report.root_cause.value if hasattr(report.root_cause, "value") else str(report.root_cause),
+                    "confidence": report.confidence,
+                    "impact": report.impact.value if hasattr(report.impact, "value") else str(report.impact),
+                    "recommended_actions": report.recommended_actions,
+                    "evidence": [e.model_dump() if hasattr(e, "model_dump") else e for e in report.evidence],
+                }
+                index_diagnosis(diagnosis_id, diagnosis_data)
         except Exception as e:
             print(f"[Agent B] DB write error: {e}")
 
@@ -136,6 +154,14 @@ async def startup_event():
         diagnosis_topic_prefix=settings.mqtt_topic_diagnosis,
         log_dir=settings.log_dir,
     )
+    # Index rules to vector DB on startup
+    if index_rules:
+        try:
+            count = index_rules()
+            if count > 0:
+                print(f"[Agent B] Indexed {count} rules to vector DB")
+        except Exception as e:
+            print(f"[Agent B] Failed to index rules: {e}")
 
 
 @app.on_event("shutdown")

@@ -173,11 +173,15 @@ class ScenarioExecutor:
         truth_dict = self.fault_injector.get_ground_truth()
         fault_type = FaultType[truth_dict["fault"].upper()] if truth_dict["fault"] != "none" else FaultType.NONE
         
+        # Get plant_id and asset_id from scenario (with defaults)
+        plant_id = self.scenario.get("plant_id", "plant01")
+        asset_id = self.scenario.get("asset_id", "pump01")
+        
         # Create telemetry
         telemetry = Telemetry(
             ts=get_current_timestamp(),
-            plant_id="plant01",
-            asset_id="pump01",
+            plant_id=plant_id,
+            asset_id=asset_id,
             signals=TelemetrySignals(
                 pressure_bar=sensor_signals["pressure_bar"],
                 flow_m3h=sensor_signals["flow_m3h"],

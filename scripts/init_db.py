@@ -151,6 +151,40 @@ CREATE INDEX IF NOT EXISTS ix_review_requests_status ON review_requests(status);
 CREATE INDEX IF NOT EXISTS ix_review_requests_asset_ts ON review_requests(asset_id, ts);
 CREATE INDEX IF NOT EXISTS ix_review_requests_diagnosis ON review_requests(diagnosis_id);
 
+-- Chat (Agent D - conversation and ReAct steps persistence)
+CREATE TABLE IF NOT EXISTS chat_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    preview TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_chat_sessions_updated ON chat_sessions(updated_at);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now')),
+    tool_calls TEXT,
+    FOREIGN KEY (session_id) REFERENCES chat_sessions(id)
+);
+CREATE INDEX IF NOT EXISTS ix_chat_messages_session ON chat_messages(session_id);
+
+CREATE TABLE IF NOT EXISTS chat_steps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    message_id INTEGER NOT NULL,
+    step_type TEXT NOT NULL,
+    step_order INTEGER NOT NULL DEFAULT 0,
+    tool_name TEXT,
+    tool_args TEXT,
+    content TEXT,
+    raw_result TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (message_id) REFERENCES chat_messages(id)
+);
+CREATE INDEX IF NOT EXISTS ix_chat_steps_message ON chat_steps(message_id);
+
 -- Feedback (from Agent D)
 CREATE TABLE IF NOT EXISTS feedback (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -183,6 +217,44 @@ def _migrate_diagnosis_alert_id(conn):
     conn.commit()
 
 
+def _migrate_tickets_url(conn):
+    """Add url column to tickets if missing (for Salesforce Case/Work Order link)."""
+    cur = conn.execute("PRAGMA table_info(tickets)")
+    cols = [row[1] for row in cur.fetchall()]
+    if "url" not in cols:
+        conn.execute("ALTER TABLE tickets ADD COLUMN url TEXT")
+        conn.commit()
+        print("Migration: added tickets.url")
+
+
+def _init_vector_table(conn):
+    """
+    Initialize vec0 virtual table for RAG (optional, requires sqlite-vec).
+    Virtual tables are created dynamically and persist in the database.
+    """
+    try:
+        import sqlite_vec
+        conn.enable_load_extension(True)
+        sqlite_vec.load(conn)
+        conn.enable_load_extension(False)
+        
+        # Create vec_memory table with 384 dimensions (all-MiniLM-L6-v2)
+        conn.execute("""
+            create virtual table if not exists vec_memory using vec0(
+                embedding float[384],
+                metadata text
+            );
+        """)
+        conn.commit()
+        print("Vector table 'vec_memory' initialized (RAG support enabled)")
+    except ImportError:
+        # sqlite-vec not installed - skip, that's ok
+        pass
+    except Exception as e:
+        # Extension load failed - skip, that's ok
+        pass
+
+
 def main():
     import sqlite3
     Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
@@ -190,9 +262,12 @@ def main():
     conn.executescript(SCHEMA_SQL)
     conn.commit()
     _migrate_diagnosis_alert_id(conn)
+    _migrate_tickets_url(conn)
+    _init_vector_table(conn)  # Optional: initialize vec0 virtual table if sqlite-vec available
     conn.close()
     print(f"Schema created: {DB_PATH}")
-    print("Tables: telemetry, alerts, diagnosis, vision_images, vision_analysis, tickets, review_requests, feedback")
+    print("Tables: telemetry, alerts, diagnosis, vision_images, vision_analysis, tickets, review_requests, chat_sessions, chat_messages, chat_steps, feedback")
+    print("Note: vec_memory (virtual table) created if sqlite-vec is installed")
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@
   "version": "1.0",
   "name": "multi_fault",
   "description": "Multiple faults: bearing wear + sensor drift",
+  "plant_id": "plant01",
+  "asset_id": "pump01",
   "seed": 12345,
   "duration_sec": 3600,
   "initial_conditions": {
