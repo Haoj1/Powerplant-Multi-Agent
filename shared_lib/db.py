@@ -126,17 +126,39 @@ def insert_diagnosis(
 
 def query_review_requests(status: str = "pending", limit: int = 50) -> List[Dict[str, Any]]:
     """Query review requests by status (for Agent D)."""
+    return query_review_requests_paginated(status=status, limit=limit, offset=0)[0]
+
+
+def query_review_requests_paginated(
+    status: str = "pending",
+    limit: int = 50,
+    offset: int = 0,
+    asset_id: Optional[str] = None,
+) -> tuple:
+    """Query review requests with pagination. Returns (rows, total_count)."""
     with _lock:
         conn = get_connection()
         try:
+            if status:
+                where = "WHERE status = ?"
+                params: list = [status]
+            else:
+                where = "WHERE 1=1"
+                params = []
+            if asset_id:
+                where += " AND asset_id = ?"
+                params.append(asset_id)
+            base = "FROM review_requests " + where
+            cur = conn.execute("SELECT COUNT(*) " + base, params)
+            total = cur.fetchone()[0]
             cur = conn.execute(
-                """SELECT id, diagnosis_id, plant_id, asset_id, ts, status, created_at, resolved_at
-                   FROM review_requests WHERE status = ? ORDER BY created_at DESC LIMIT ?""",
-                (status, limit),
+                "SELECT id, diagnosis_id, plant_id, asset_id, ts, status, created_at, resolved_at "
+                + base + " ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                params + [limit, offset],
             )
             rows = cur.fetchall()
             cols = [c[0] for c in cur.description]
-            return [dict(zip(cols, r)) for r in rows]
+            return [dict(zip(cols, r)) for r in rows], total
         finally:
             conn.close()
 
@@ -171,6 +193,35 @@ def insert_vision_image(ts: str, plant_id: str, asset_id: str, image_path: str) 
                 (ts, plant_id, asset_id, image_path),
             )
             conn.commit()
+        finally:
+            conn.close()
+
+
+def query_vision_images(
+    asset_id: Optional[str] = None,
+    limit: int = 20,
+) -> List[Dict[str, Any]]:
+    """Query recent vision image records (ts, asset_id, image_path). Optionally filter by asset_id."""
+    with _lock:
+        conn = get_connection()
+        try:
+            if asset_id:
+                cur = conn.execute(
+                    """SELECT id, ts, plant_id, asset_id, image_path
+                       FROM vision_images WHERE asset_id = ?
+                       ORDER BY ts DESC LIMIT ?""",
+                    (asset_id, limit),
+                )
+            else:
+                cur = conn.execute(
+                    """SELECT id, ts, plant_id, asset_id, image_path
+                       FROM vision_images
+                       ORDER BY ts DESC LIMIT ?""",
+                    (limit,),
+                )
+            rows = cur.fetchall()
+            cols = [c[0] for c in cur.description]
+            return [dict(zip(cols, r)) for r in rows]
         finally:
             conn.close()
 
@@ -228,28 +279,30 @@ def insert_ticket(
 def query_telemetry(
     asset_id: str,
     since_ts: Optional[str] = None,
+    until_ts: Optional[str] = None,
     limit: int = 100,
 ) -> List[Dict[str, Any]]:
-    """Query telemetry for an asset, optionally since a timestamp. Returns list of dicts."""
+    """Query telemetry for an asset, optionally in [since_ts, until_ts]. Returns list of dicts."""
     with _lock:
         conn = get_connection()
         try:
+            conditions = ["asset_id = ?"]
+            params: List[Any] = [asset_id]
             if since_ts:
-                cur = conn.execute(
-                    """SELECT ts, plant_id, asset_id, pressure_bar, flow_m3h, temp_c, bearing_temp_c,
-                              vibration_rms, rpm, motor_current_a, valve_open_pct, fault, severity
-                       FROM telemetry WHERE asset_id = ? AND ts >= ?
-                       ORDER BY ts DESC LIMIT ?""",
-                    (asset_id, since_ts, limit),
-                )
-            else:
-                cur = conn.execute(
-                    """SELECT ts, plant_id, asset_id, pressure_bar, flow_m3h, temp_c, bearing_temp_c,
-                              vibration_rms, rpm, motor_current_a, valve_open_pct, fault, severity
-                       FROM telemetry WHERE asset_id = ?
-                       ORDER BY ts DESC LIMIT ?""",
-                    (asset_id, limit),
-                )
+                conditions.append("ts >= ?")
+                params.append(since_ts)
+            if until_ts:
+                conditions.append("ts <= ?")
+                params.append(until_ts)
+            where = " AND ".join(conditions)
+            params.append(limit)
+            cur = conn.execute(
+                f"""SELECT ts, plant_id, asset_id, pressure_bar, flow_m3h, temp_c, bearing_temp_c,
+                           vibration_rms, rpm, motor_current_a, valve_open_pct, fault, severity
+                   FROM telemetry WHERE {where}
+                   ORDER BY ts DESC LIMIT ?""",
+                tuple(params),
+            )
             rows = cur.fetchall()
             cols = [c[0] for c in cur.description]
             return [dict(zip(cols, r)) for r in rows]
@@ -261,25 +314,28 @@ def query_alerts(
     asset_id: str,
     limit: int = 20,
     since_ts: Optional[str] = None,
+    until_ts: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """Query recent alerts for an asset. Returns list of dicts."""
+    """Query recent alerts for an asset, optionally in [since_ts, until_ts]. Returns list of dicts."""
     with _lock:
         conn = get_connection()
         try:
+            conditions = ["asset_id = ?"]
+            params: List[Any] = [asset_id]
             if since_ts:
-                cur = conn.execute(
-                    """SELECT id, ts, plant_id, asset_id, severity, signal, score, method, evidence
-                       FROM alerts WHERE asset_id = ? AND ts >= ?
-                       ORDER BY ts DESC LIMIT ?""",
-                    (asset_id, since_ts, limit),
-                )
-            else:
-                cur = conn.execute(
-                    """SELECT id, ts, plant_id, asset_id, severity, signal, score, method, evidence
-                       FROM alerts WHERE asset_id = ?
-                       ORDER BY ts DESC LIMIT ?""",
-                    (asset_id, limit),
-                )
+                conditions.append("ts >= ?")
+                params.append(since_ts)
+            if until_ts:
+                conditions.append("ts <= ?")
+                params.append(until_ts)
+            where = " AND ".join(conditions)
+            params.append(limit)
+            cur = conn.execute(
+                f"""SELECT id, ts, plant_id, asset_id, severity, signal, score, method, evidence
+                   FROM alerts WHERE {where}
+                   ORDER BY ts DESC LIMIT ?""",
+                tuple(params),
+            )
             rows = cur.fetchall()
             cols = [c[0] for c in cur.description]
             result = [dict(zip(cols, r)) for r in rows]
@@ -326,33 +382,44 @@ def query_alerts_with_diagnosis_and_ticket(
     limit: int = 50,
 ) -> List[Dict[str, Any]]:
     """Query alerts with linked diagnosis_id and ticket_id (for Agent D Alerts list)."""
+    return query_alerts_with_diagnosis_and_ticket_paginated(
+        asset_id=asset_id, severity=None, limit=limit, offset=0
+    )[0]
+
+
+def query_alerts_with_diagnosis_and_ticket_paginated(
+    asset_id: Optional[str] = None,
+    severity: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> tuple:
+    """Query alerts with pagination. Returns (rows, total_count)."""
     with _lock:
         conn = get_connection()
         try:
+            sel = """SELECT a.id as alert_id, a.ts, a.plant_id, a.asset_id, a.severity, a.signal, a.score,
+                     d.id as diagnosis_id, t.id as ticket_row_id, t.ticket_id, t.url as ticket_url
+                     FROM alerts a
+                     LEFT JOIN diagnosis d ON d.alert_id = a.id
+                     LEFT JOIN tickets t ON t.diagnosis_id = d.id"""
+            where = ""
+            params: list = []
             if asset_id:
-                cur = conn.execute(
-                    """SELECT a.id as alert_id, a.ts, a.plant_id, a.asset_id, a.severity, a.signal, a.score,
-                              d.id as diagnosis_id, t.id as ticket_row_id, t.ticket_id, t.url as ticket_url
-                       FROM alerts a
-                       LEFT JOIN diagnosis d ON d.alert_id = a.id
-                       LEFT JOIN tickets t ON t.diagnosis_id = d.id
-                       WHERE a.asset_id = ?
-                       ORDER BY a.ts DESC LIMIT ?""",
-                    (asset_id, limit),
-                )
-            else:
-                cur = conn.execute(
-                    """SELECT a.id as alert_id, a.ts, a.plant_id, a.asset_id, a.severity, a.signal, a.score,
-                              d.id as diagnosis_id, t.id as ticket_row_id, t.ticket_id, t.url as ticket_url
-                       FROM alerts a
-                       LEFT JOIN diagnosis d ON d.alert_id = a.id
-                       LEFT JOIN tickets t ON t.diagnosis_id = d.id
-                       ORDER BY a.ts DESC LIMIT ?""",
-                    (limit,),
-                )
+                where += " AND a.asset_id = ?" if where else " WHERE a.asset_id = ?"
+                params.append(asset_id)
+            if severity:
+                where += " AND a.severity = ?" if where else " WHERE a.severity = ?"
+                params.append(severity)
+            base = sel + where
+            cur = conn.execute("SELECT COUNT(*) FROM alerts a" + where, params)
+            total = cur.fetchone()[0]
+            cur = conn.execute(
+                base + " ORDER BY a.ts DESC LIMIT ? OFFSET ?",
+                params + [limit, offset],
+            )
             rows = cur.fetchall()
             cols = [c[0] for c in cur.description]
-            return [dict(zip(cols, r)) for r in rows]
+            return [dict(zip(cols, r)) for r in rows], total
         finally:
             conn.close()
 

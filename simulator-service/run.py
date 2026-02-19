@@ -2,7 +2,7 @@
 """
 Launch script for simulator service.
 
-This script sets up the Python path to allow imports from shared-lib.
+This script sets up the Python path to allow imports from shared_lib.
 """
 
 import sys

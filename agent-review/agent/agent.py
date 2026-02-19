@@ -93,8 +93,19 @@ async def run_review_chat_stream(messages_input: list, session_id: int | None = 
                             steps.append(step)
                             yield {"type": "step", "step": step}
                         elif "AIMessage" in msg_type:
+                            content = getattr(msg, "content", "") or ""
                             tool_calls = getattr(msg, "tool_calls", []) or []
                             if tool_calls:
+                                # Emit planning/reasoning as thought first (ReAct-style)
+                                if content and content.strip():
+                                    step_order += 1
+                                    step = {
+                                        "step_type": "thought",
+                                        "step_order": step_order,
+                                        "content": content.strip(),
+                                    }
+                                    steps.append(step)
+                                    yield {"type": "step", "step": step}
                                 for tc in tool_calls:
                                     step_order += 1
                                     name = tc.get("name", "")
@@ -109,7 +120,6 @@ async def run_review_chat_stream(messages_input: list, session_id: int | None = 
                                     steps.append(step)
                                     yield {"type": "step", "step": step}
                             else:
-                                content = getattr(msg, "content", "") or ""
                                 if content:
                                     step_order += 1
                                     step = {

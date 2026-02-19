@@ -1,0 +1,80 @@
+.trigger-alert-modal.modal-content {
+  background: #fff;
+  border-radius: 8px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.trigger-alert-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #eee;
+  background: #f9f9f9;
+}
+
+.trigger-alert-modal .modal-header h3 { margin: 0; font-size: 1.25rem; }
+
+.trigger-alert-modal .modal-close {
+  background: none; border: none; font-size: 1.5rem; line-height: 1;
+  cursor: pointer; color: #666; padding: 0 0.25rem;
+}
+.trigger-alert-modal .modal-close:hover { color: #333; }
+
+.trigger-alert-modal .modal-body {
+  padding: 1rem 1.25rem;
+}
+
+.trigger-alert-modal .form-row {
+  margin-bottom: 1rem;
+}
+
+.trigger-alert-modal .form-row label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+  color: #333;
+}
+
+.trigger-alert-modal .form-row input,
+.trigger-alert-modal .form-row select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.trigger-alert-modal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #eee;
+  background: #f9f9f9;
+}
+
+.trigger-alert-modal .btn-cancel {
+  padding: 0.5rem 1rem;
+  background: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.trigger-alert-modal .btn-primary {
+  padding: 0.5rem 1rem;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.trigger-alert-modal .btn-primary:hover {
+  background: #c0392b;
+}

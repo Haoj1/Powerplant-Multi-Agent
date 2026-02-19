@@ -2,7 +2,7 @@
 
 ## ✅ 已实现的功能
 
-### 1. 向量索引模块 (`shared-lib/vector_indexing.py`)
+### 1. 向量索引模块 (`shared_lib/vector_indexing.py`)
 
 提供了 7 种数据类型的索引函数：
 - `index_diagnosis()` - 诊断索引

@@ -1,0 +1,115 @@
+.scenario-list-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.scenario-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.scenario-list-table th,
+.scenario-list-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.scenario-list-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.scenario-list-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.scenario-list-table .badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.badge.status-running {
+  background: #27ae60;
+  color: #fff;
+}
+
+.badge.status-stopped {
+  background: #95a5a6;
+  color: #fff;
+}
+
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-bar {
+  height: 8px;
+  min-width: 4px;
+  background: #3498db;
+  border-radius: 4px;
+  max-width: 80px;
+}
+
+.progress-text {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.scenario-list-table .action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.scenario-list-table .action-buttons button {
+  padding: 0.35rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-start {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-start:hover {
+  background: #219a52;
+}
+
+.btn-stop {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-stop:hover {
+  background: #c0392b;
+}
+
+.btn-reset {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-reset:hover {
+  background: #7f8c8d;
+}
+
+.scenario-list-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #7f8c8d;
+  background: #f9f9f9;
+  border-radius: 8px;
+}

@@ -22,7 +22,7 @@
 * `agent-diagnosis`（Agent B）：订阅 alerts + 拉取历史窗口，输出 RCA 诊断，发布 `diagnosis/*`
 * `agent-ticket`（Agent C）：订阅 diagnosis，创建工单（GitHub Issues 或自建 Ticket API），发布 `tickets/*`
 * `agent-review`（Agent D）：订阅 tickets，提供审批/修改/关闭接口，并发布 `feedback/*`
-* `shared-lib`：统一 schema、序列化、特征提取、工具函数
+* `shared_lib`：统一 schema、序列化、特征提取、工具函数
 * 可选：`dashboard`（简单前端/CLI）+ Grafana（如果有时间）
 
 ### 消息总线（推荐）

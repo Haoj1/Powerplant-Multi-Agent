@@ -126,6 +126,6 @@ TICKET_COOLDOWN_SEC=30   # Optional: max one review_request per asset per N sec
 ## 10. Implementation Order
 
 1. Add `review_requests` table in `init_db.py` (or migration)
-2. Add `insert_review_request` in `shared-lib/db.py`
+2. Add `insert_review_request` in `shared_lib/db.py`
 3. Modify Agent B: `insert_diagnosis` returns id; include `diagnosis_id` in MQTT payload
 4. Implement Agent C: subscribe diagnosis/#, insert_review_request, optional cooldown

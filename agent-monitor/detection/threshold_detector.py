@@ -12,13 +12,13 @@ from shared_lib.models import (
 
 
 # Default thresholds (aligned with ISO 20816 and typical pump limits)
-# Note: Lowered for easier testing - adjust based on your pump's normal operating range
+# Based on actual healthy baseline data: vibration ~2.0 mm/s, bearing_temp ~45-60°C, pressure ~5-6 bar, current ~30-32 A
 DEFAULT_THRESHOLDS = {
-    "vibration_rms": {"warning": 7.1, "critical": 18.0},
-    "bearing_temp_c": {"warning": 70.0, "critical": 85.0},
-    "pressure_bar": {"warning_high": 8.0, "critical_high": 12.0},  # Lowered for testing
-    "motor_current_a": {"warning_high": 15.0, "critical_high": 20.0},  # Lowered for testing
-    "temp_c": {"warning_high": 80.0, "critical_high": 95.0},
+    "vibration_rms": {"warning": 7.1, "critical": 18.0},  # ISO 20816: Grade B/C boundary, Grade C/D boundary
+    "bearing_temp_c": {"warning": 70.0, "critical": 85.0},  # Normal ~45-60°C, warning at 70°C, critical at 85°C
+    "pressure_bar": {"warning_high": 18.0, "critical_high": 25.0},  # Normal ~5-6 bar, warning at 18 bar, critical at 25 bar
+    "motor_current_a": {"warning_high": 38.0, "critical_high": 45.0},  # Normal ~30-32 A, warning at 38 A, critical at 45 A
+    "temp_c": {"warning_high": 80.0, "critical_high": 95.0},  # Normal ~25-35°C, warning at 80°C, critical at 95°C
 }
 
 

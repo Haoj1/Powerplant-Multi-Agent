@@ -1,118 +1,111 @@
 /**
- * API service for Agent D backend and Simulator.
+ * API service for Agent D backend (port 8005)
  */
 
-import axios from 'axios';
+import axios from 'axios'
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8005';
-const SIMULATOR_URL = process.env.REACT_APP_SIMULATOR_URL || 'http://localhost:8001';
+const API_BASE_URL = '/api'  // Proxy to http://localhost:8005
 
-// Agent D API client
-const apiClient = axios.create({
+const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-});
+})
 
-// Simulator API client
-const simulatorClient = axios.create({
-  baseURL: SIMULATOR_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// Review Requests (paginated)
+export const getReviewRequests = async (status = 'pending', assetId = null, limit = 20, offset = 0) => {
+  const params = { status, limit, offset }
+  if (assetId) params.asset_id = assetId
+  const response = await api.get('/review-requests', { params })
+  return { data: response.data.data, total: response.data.total ?? 0 }
+}
 
-// --- Agent D API ---
+export const approveReview = async (reviewId, notes = '', createSalesforceCase = false) => {
+  const response = await api.post(`/review/${reviewId}/approve`, {
+    notes,
+    create_salesforce_case: createSalesforceCase,
+  })
+  return response.data
+}
 
-export const reviewAPI = {
-  // Review Requests
-  getReviewRequests: (params = {}) => {
-    return apiClient.get('/api/review-requests', { params });
-  },
+export const rejectReview = async (reviewId, notes = '') => {
+  const response = await api.post(`/review/${reviewId}/reject`, { notes })
+  return response.data
+}
 
-  // Diagnosis
-  getDiagnosis: (diagnosisId) => {
-    return apiClient.get(`/api/diagnosis/${diagnosisId}`);
-  },
+// Diagnosis
+export const getDiagnosis = async (diagnosisId) => {
+  const response = await api.get(`/diagnosis/${diagnosisId}`)
+  return response.data.data
+}
 
-  // Alerts
-  getAlerts: (params = {}) => {
-    return apiClient.get('/api/alerts', { params });
-  },
+// Alerts (paginated)
+export const getAlerts = async (assetId = null, limit = 20, offset = 0, severity = null) => {
+  const params = { limit, offset }
+  if (assetId) params.asset_id = assetId
+  if (severity) params.severity = severity
+  const response = await api.get('/alerts', { params })
+  return { data: response.data.data, total: response.data.total ?? 0 }
+}
 
-  // Telemetry
-  getTelemetry: (params = {}) => {
-    return apiClient.get('/api/telemetry', { params });
-  },
+// Telemetry
+export const getTelemetry = async (assetId, sinceTs = null, limit = 100) => {
+  const params = { asset_id: assetId, limit }
+  if (sinceTs) params.since_ts = sinceTs
+  const response = await api.get('/telemetry', { params })
+  return response.data.data
+}
 
-  // Review Actions
-  approveReview: (reviewId, body = {}) => {
-    return apiClient.post(`/api/review/${reviewId}/approve`, body);
-  },
+// Chat
+export const getChatSessions = async (limit = 20) => {
+  const response = await api.get('/chat/sessions', { params: { limit } })
+  return response.data.sessions
+}
 
-  rejectReview: (reviewId, body = {}) => {
-    return apiClient.post(`/api/review/${reviewId}/reject`, body);
-  },
-};
+export const getChatSession = async (sessionId) => {
+  const response = await api.get(`/chat/sessions/${sessionId}`)
+  return response.data
+}
 
-// --- Chat API ---
+/**
+ * Send a question to the chat API and consume SSE stream.
+ * onEvent: (event) => void where event is { type: 'step'|'result'|'error', step?, answer?, error? }
+ * Returns the session_id from the result event (or null).
+ */
+export async function chatAskStream(question, sessionId, conversationHistory, onEvent) {
+  const url = '/api/chat/ask'
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      question,
+      session_id: sessionId || null,
+      conversation_history: conversationHistory || [],
+    }),
+  })
+  if (!res.ok) throw new Error(res.statusText || 'Chat request failed')
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let sessionIdOut = null
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n\n')
+    buffer = lines.pop() || ''
+    for (const chunk of lines) {
+      const dataLine = chunk.split('\n').find((l) => l.startsWith('data:'))
+      if (!dataLine) continue
+      try {
+        const data = JSON.parse(dataLine.slice(5).trim())
+        if (data.type === 'result' && data.session_id != null) sessionIdOut = data.session_id
+        if (onEvent) onEvent(data)
+      } catch (_) {}
+    }
+  }
+  return sessionIdOut
+}
 
-export const chatAPI = {
-  // Sessions
-  getSessions: (limit = 20) => {
-    return apiClient.get('/api/chat/sessions', { params: { limit } });
-  },
-
-  getSession: (sessionId) => {
-    return apiClient.get(`/api/chat/sessions/${sessionId}`);
-  },
-
-  // Chat (SSE - handled separately, this is just for reference)
-  // Use EventSource directly: new EventSource(`/api/chat/ask?question=...&session_id=...`)
-};
-
-// --- Simulator API ---
-
-export const simulatorAPI = {
-  // Scenarios
-  getScenarios: () => {
-    return simulatorClient.get('/scenarios');
-  },
-
-  getStatus: (assetId = null) => {
-    const params = assetId ? { asset_id: assetId } : {};
-    return simulatorClient.get('/status', { params });
-  },
-
-  loadScenario: (scenario) => {
-    return simulatorClient.post('/scenario/load', { scenario });
-  },
-
-  startScenario: (assetId) => {
-    return simulatorClient.post(`/scenario/start/${assetId}`);
-  },
-
-  stopScenario: (assetId) => {
-    return simulatorClient.post(`/scenario/stop/${assetId}`);
-  },
-
-  stopAllScenarios: () => {
-    return simulatorClient.post('/scenario/stop');
-  },
-
-  resetScenario: (assetId) => {
-    return simulatorClient.post(`/scenario/reset/${assetId}`);
-  },
-
-  // Manual Alert Trigger
-  triggerAlert: (alertData) => {
-    return simulatorClient.post('/alert/trigger', alertData);
-  },
-};
-
-export default {
-  reviewAPI,
-  chatAPI,
-  simulatorAPI,
-};
+export default api

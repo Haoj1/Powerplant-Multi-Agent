@@ -100,13 +100,20 @@ def query_diagnosis(diagnosis_id: int) -> str:
 
 
 @tool
-def query_alerts(asset_id: str, limit: int = 10, since_ts: Optional[str] = None) -> str:
-    """Query recent alerts for an asset."""
+def query_alerts(
+    asset_id: str,
+    limit: int = 10,
+    since_ts: Optional[str] = None,
+    until_ts: Optional[str] = None,
+) -> str:
+    """Query recent alerts for an asset. Optionally limit to time range [since_ts, until_ts]."""
     db = _get_db()
     if not db:
         return "Database not available."
     try:
-        rows = db.query_alerts(asset_id=asset_id, limit=limit, since_ts=since_ts)
+        rows = db.query_alerts(
+            asset_id=asset_id, limit=limit, since_ts=since_ts, until_ts=until_ts
+        )
     except Exception as e:
         return f"Query error: {e}"
     if not rows:
@@ -123,13 +130,20 @@ def query_alerts(asset_id: str, limit: int = 10, since_ts: Optional[str] = None)
 
 
 @tool
-def query_telemetry(asset_id: str, since_ts: Optional[str] = None, limit: int = 50) -> str:
-    """Query recent telemetry (sensor data) for an asset."""
+def query_telemetry(
+    asset_id: str,
+    since_ts: Optional[str] = None,
+    until_ts: Optional[str] = None,
+    limit: int = 50,
+) -> str:
+    """Query recent telemetry (sensor data) for an asset. Optionally limit to time range [since_ts, until_ts]."""
     db = _get_db()
     if not db:
         return "Database not available."
     try:
-        rows = db.query_telemetry(asset_id=asset_id, since_ts=since_ts, limit=limit)
+        rows = db.query_telemetry(
+            asset_id=asset_id, since_ts=since_ts, until_ts=until_ts, limit=limit
+        )
     except Exception as e:
         return f"Query error: {e}"
     if not rows:
@@ -152,6 +166,39 @@ def query_telemetry(asset_id: str, since_ts: Optional[str] = None, limit: int = 
     if len(rows) > 20:
         lines.append(f"... and {len(rows) - 20} more rows")
     return "\n".join(lines)
+
+
+@tool
+def query_vision_images(asset_id: Optional[str] = None, limit: int = 10) -> str:
+    """List recent vision image records (ts, asset_id, image_path). Use asset_id to filter by asset. Use the image_path with analyze_image_with_vlm to run VLM on an image."""
+    db = _get_db()
+    if not db:
+        return "Database not available."
+    try:
+        rows = db.query_vision_images(asset_id=asset_id, limit=limit)
+    except Exception as e:
+        return f"Query error: {e}"
+    if not rows:
+        return "No vision images found."
+    lines = []
+    for r in rows:
+        lines.append(
+            f"id={r.get('id')} ts={r.get('ts')} asset_id={r.get('asset_id')} image_path={r.get('image_path')}"
+        )
+    return "\n".join(lines)
+
+
+@tool
+def analyze_image_with_vlm(
+    image_path: str,
+    question: str = "",
+) -> str:
+    """View an image and call the VLM (vision language model) to describe it or answer a question. image_path can be an absolute path or relative to project root (e.g. from query_vision_images). question: optional question (e.g. 'Any anomalies?'). If empty, returns a general description."""
+    try:
+        from shared_lib.vision import analyze_image
+    except ImportError:
+        return "Vision module not available."
+    return analyze_image(image_path=image_path, question=question.strip() or None)
 
 
 @tool
@@ -397,6 +444,8 @@ def get_review_tools() -> List:
         query_diagnosis,
         query_alerts,
         query_telemetry,
+        query_vision_images,
+        analyze_image_with_vlm,
         query_rules,
     ]
     

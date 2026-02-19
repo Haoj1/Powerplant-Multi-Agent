@@ -49,7 +49,7 @@ python scripts/init_db.py
 | `chat_messages` | Messages (user + assistant) |
 | `chat_steps` | ReAct steps (thought, tool_call, tool_result) per message |
 
-### New DB Functions (in shared-lib/db.py)
+### New DB Functions (in shared_lib/db.py)
 
 | Function | Purpose |
 |----------|---------|

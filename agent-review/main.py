@@ -40,11 +40,17 @@ except ImportError:
     shared_db = None
 
 try:
-    from shared_lib.vector_indexing import index_feedback, index_chat_message, index_vision_analysis
+    from shared_lib.vector_indexing import index_feedback, index_chat_message, index_vision_analysis, index_ticket
 except ImportError:
     index_feedback = None
     index_chat_message = None
     index_vision_analysis = None
+    index_ticket = None
+
+try:
+    from shared_lib.integrations import get_ticket_connector
+except ImportError:
+    get_ticket_connector = None
 
 from agent.agent import run_review_chat_stream
 
@@ -69,14 +75,20 @@ settings = get_settings()
 # --- Read API routes ---
 
 @app.get("/api/review-requests")
-async def get_review_requests(status: str = "pending", asset_id: Optional[str] = None, limit: int = 50):
-    """List review requests (default: pending)."""
+async def get_review_requests(
+    status: str = "pending",
+    asset_id: Optional[str] = None,
+    limit: int = 20,
+    offset: int = 0,
+):
+    """List review requests with pagination. Use status='' for all statuses."""
     if not shared_db:
         raise HTTPException(503, "Database not available")
-    rows = shared_db.query_review_requests(status=status, limit=limit)
-    if asset_id:
-        rows = [r for r in rows if r.get("asset_id") == asset_id]
-    return {"success": True, "data": rows}
+    status_filter = status if (status and status.strip()) else ""
+    rows, total = shared_db.query_review_requests_paginated(
+        status=status_filter, limit=limit, offset=offset, asset_id=asset_id
+    )
+    return {"success": True, "data": rows, "total": total}
 
 
 @app.get("/api/diagnosis/{diagnosis_id}")
@@ -91,20 +103,34 @@ async def get_diagnosis(diagnosis_id: int):
 
 
 @app.get("/api/alerts")
-async def get_alerts(asset_id: Optional[str] = None, limit: int = 50):
-    """List alerts with linked diagnosis and ticket."""
+async def get_alerts(
+    asset_id: Optional[str] = None,
+    severity: Optional[str] = None,
+    limit: int = 20,
+    offset: int = 0,
+):
+    """List alerts with pagination. severity: warning | critical (optional)."""
     if not shared_db:
         raise HTTPException(503, "Database not available")
-    rows = shared_db.query_alerts_with_diagnosis_and_ticket(asset_id=asset_id, limit=limit)
-    return {"success": True, "data": rows}
+    rows, total = shared_db.query_alerts_with_diagnosis_and_ticket_paginated(
+        asset_id=asset_id, severity=severity, limit=limit, offset=offset
+    )
+    return {"success": True, "data": rows, "total": total}
 
 
 @app.get("/api/telemetry")
-async def get_telemetry(asset_id: str, since_ts: Optional[str] = None, limit: int = 100):
-    """Get telemetry for an asset."""
+async def get_telemetry(
+    asset_id: str,
+    since_ts: Optional[str] = None,
+    until_ts: Optional[str] = None,
+    limit: int = 100,
+):
+    """Get telemetry for an asset, optionally in time range [since_ts, until_ts]."""
     if not shared_db:
         raise HTTPException(503, "Database not available")
-    rows = shared_db.query_telemetry(asset_id=asset_id, since_ts=since_ts, limit=limit)
+    rows = shared_db.query_telemetry(
+        asset_id=asset_id, since_ts=since_ts, until_ts=until_ts, limit=limit
+    )
     return {"success": True, "data": rows}
 
 
@@ -230,44 +256,86 @@ class ReviewActionBody(BaseModel):
 
 @app.post("/api/review/{review_id}/approve")
 async def approve_review(review_id: int, body: Optional[ReviewActionBody] = Body(None)):
-    """Approve review request. Placeholder - Salesforce creation to be added."""
+    """Approve review request. Optionally create Salesforce Case when create_salesforce_case=True."""
     if not shared_db:
         raise HTTPException(503, "Database not available")
     b = body or ReviewActionBody()
-    
-    # Get review request details
+
+    from shared_lib.utils import get_current_timestamp
     review_req = None
     try:
         requests = shared_db.query_review_requests(status="pending", limit=1000)
         review_req = next((r for r in requests if r["id"] == review_id), None)
     except Exception:
         pass
-    
+
     shared_db.update_review_request_status(review_id, "approved")
-    
-    # Index feedback if review request found
-    if review_req and index_feedback:
-        try:
-            diagnosis_id = review_req.get("diagnosis_id")
-            diagnosis = shared_db.get_diagnosis_by_id(diagnosis_id) if diagnosis_id else None
-            
-            # Create feedback entry (ticket_id placeholder - will be updated when ticket is created)
-            from shared_lib.utils import get_current_timestamp
-            feedback_id = hash(f"{review_id}_{get_current_timestamp()}") % (2**31)
-            
-            index_feedback(feedback_id, {
-                "asset_id": review_req.get("asset_id", ""),
-                "plant_id": review_req.get("plant_id", ""),
-                "review_decision": "approved",
-                "final_root_cause": diagnosis.get("root_cause") if diagnosis else "",
-                "original_root_cause": diagnosis.get("root_cause") if diagnosis else "",
-                "notes": b.notes,
-                "ticket_id": "PENDING",  # Will be updated when ticket is created
-            })
-        except Exception:
-            pass  # Fail silently
-    
-    return {"success": True, "message": "Approved", "review_id": review_id}
+
+    ticket_id_used = "PENDING"
+    if review_req:
+        diagnosis_id = review_req.get("diagnosis_id")
+        diagnosis = shared_db.get_diagnosis_by_id(diagnosis_id) if diagnosis_id else None
+        asset_id = review_req.get("asset_id", "")
+        plant_id = review_req.get("plant_id", "")
+
+        if b.create_salesforce_case and get_ticket_connector:
+            connector = get_ticket_connector()
+            if connector and diagnosis:
+                try:
+                    subject = f"Diagnosis approval: {diagnosis.get('root_cause', 'unknown')}"
+                    description = f"Asset: {asset_id}, Plant: {plant_id}. Root cause: {diagnosis.get('root_cause', '')}. Notes: {b.notes}"
+                    result = connector.create_case(
+                        subject=subject,
+                        description=description,
+                        asset_id=asset_id,
+                        plant_id=plant_id,
+                        diagnosis_id=diagnosis_id,
+                        root_cause=diagnosis.get("root_cause", ""),
+                    )
+                    ticket_id_used = result.ticket_id
+                    ts_str = get_current_timestamp().isoformat()
+                    shared_db.insert_ticket(
+                        ts=ts_str,
+                        plant_id=plant_id,
+                        asset_id=asset_id,
+                        ticket_id=result.ticket_id,
+                        title=result.title or subject,
+                        body=result.body or description,
+                        status="open",
+                        diagnosis_id=diagnosis_id,
+                        url=result.url,
+                    )
+                    if index_ticket:
+                        try:
+                            index_ticket(result.ticket_id, {
+                                "title": result.title or subject,
+                                "body": result.body or description,
+                                "status": "open",
+                                "asset_id": asset_id,
+                                "plant_id": plant_id,
+                                "diagnosis_id": diagnosis_id,
+                            })
+                        except Exception:
+                            pass
+                except Exception as e:
+                    ticket_id_used = "PENDING"
+
+        if index_feedback:
+            try:
+                feedback_id = hash(f"{review_id}_{get_current_timestamp()}") % (2**31)
+                index_feedback(feedback_id, {
+                    "asset_id": asset_id,
+                    "plant_id": plant_id,
+                    "review_decision": "approved",
+                    "final_root_cause": diagnosis.get("root_cause", "") if diagnosis else "",
+                    "original_root_cause": diagnosis.get("root_cause", "") if diagnosis else "",
+                    "notes": b.notes,
+                    "ticket_id": ticket_id_used,
+                })
+            except Exception:
+                pass
+
+    return {"success": True, "message": "Approved", "review_id": review_id, "ticket_id": ticket_id_used}
 
 
 class RejectBody(BaseModel):

@@ -1,0 +1,121 @@
+.load-scenario-modal.modal-content {
+  background: #fff;
+  border-radius: 8px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.load-scenario-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #eee;
+  background: #f9f9f9;
+}
+
+.load-scenario-modal .modal-header h3 { margin: 0; font-size: 1.25rem; }
+
+.load-scenario-modal .modal-close {
+  background: none; border: none; font-size: 1.5rem; line-height: 1;
+  cursor: pointer; color: #666; padding: 0 0.25rem;
+}
+.load-scenario-modal .modal-close:hover { color: #333; }
+
+.load-scenario-modal .modal-body {
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
+}
+
+.load-scenario-modal .template-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.load-scenario-modal .template-row label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  flex-shrink: 0;
+}
+
+.load-scenario-modal .template-row select {
+  flex: 1;
+  max-width: 280px;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.load-scenario-modal .hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.75rem;
+}
+
+.load-scenario-modal .hint code {
+  background: #f0f0f0;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+}
+
+.scenario-json-input {
+  width: 100%;
+  min-height: 200px;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.modal-error {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: #fdecea;
+  color: #c0392b;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.load-scenario-modal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #eee;
+  background: #f9f9f9;
+}
+
+.load-scenario-modal .btn-cancel {
+  padding: 0.5rem 1rem;
+  background: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.load-scenario-modal .btn-primary {
+  padding: 0.5rem 1rem;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.load-scenario-modal .btn-primary:hover {
+  background: #2980b9;
+}

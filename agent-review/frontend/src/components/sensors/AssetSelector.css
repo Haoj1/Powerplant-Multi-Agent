@@ -1,0 +1,32 @@
+.asset-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.asset-selector label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.asset-selector label span {
+  color: #555;
+}
+
+.asset-selector select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.asset-selector .checkbox-label {
+  cursor: pointer;
+}
+
+.asset-selector .checkbox-label input {
+  margin: 0;
+}

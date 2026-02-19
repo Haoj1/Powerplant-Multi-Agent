@@ -31,6 +31,15 @@ class Settings(BaseSettings):
     # GitHub Configuration (for Agent C)
     github_token: Optional[str] = None
     github_repo: Optional[str] = None
+
+    # Salesforce (for Agent D - create Case on approve)
+    salesforce_domain: Optional[str] = None  # e.g. mycompany.my.salesforce.com
+    salesforce_client_id: Optional[str] = None  # Connected App Consumer Key
+    salesforce_client_secret: Optional[str] = None  # Connected App Consumer Secret
+    salesforce_username: Optional[str] = None  # For password flow
+    salesforce_password: Optional[str] = None  # + security token if required
+    # Or use a pre-obtained access token (e.g. from Salesforce Setup):
+    salesforce_access_token: Optional[str] = None
     
     # Logging
     log_dir: str = "logs"

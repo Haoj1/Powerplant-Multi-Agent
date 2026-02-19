@@ -1,0 +1,176 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.diagnosis-modal.modal-content {
+  background: #fff;
+  border-radius: 8px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #eee;
+  background: #f9f9f9;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+  padding: 0 0.25rem;
+}
+
+.modal-close:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.diagnosis-meta p,
+.diagnosis-main p {
+  margin: 0.5rem 0;
+}
+
+.diagnosis-section {
+  margin-top: 1rem;
+}
+
+.diagnosis-section ul {
+  margin: 0.25rem 0 0 1rem;
+  padding: 0;
+}
+
+.evidence-pre {
+  background: #f5f5f5;
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  overflow-x: auto;
+  margin: 0.25rem 0 0 0;
+}
+
+.confidence-bar-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.confidence-bar {
+  display: inline-block;
+  height: 8px;
+  min-width: 4px;
+  background: #27ae60;
+  border-radius: 4px;
+}
+
+.confidence-text {
+  font-size: 0.9rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #eee;
+  background: #f9f9f9;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  flex: 1;
+}
+
+.action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 200px;
+}
+
+.action-group label {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.action-group textarea {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.modal-footer .btn-approve {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.modal-footer .btn-approve:hover:not(:disabled) {
+  background: #219a52;
+}
+
+.modal-footer .btn-reject {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.modal-footer .btn-reject:hover:not(:disabled) {
+  background: #c0392b;
+}
+
+.modal-footer .btn-close {
+  background: #95a5a6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.modal-footer .btn-close:hover {
+  background: #7f8c8d;
+}

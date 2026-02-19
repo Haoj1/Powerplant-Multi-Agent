@@ -19,7 +19,7 @@ A multi-agent system for real-time monitoring, anomaly detection, root cause ana
 ├── agent-diagnosis/      # Root cause analysis agent
 ├── agent-ticket/         # Ticket creation agent
 ├── agent-review/         # Human review agent
-├── shared-lib/           # Shared models, config, utilities
+├── shared_lib/           # Shared models, config, utilities
 ├── logs/                 # JSONL log files
 ├── mosquitto/            # MQTT broker config
 ├── docker-compose.yml    # Docker services

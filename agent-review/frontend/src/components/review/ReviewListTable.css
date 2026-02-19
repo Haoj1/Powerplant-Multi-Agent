@@ -1,0 +1,92 @@
+.review-list-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.review-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.review-list-table th,
+.review-list-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.review-list-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.review-list-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.review-list-table .link-btn {
+  background: none;
+  border: none;
+  color: #3498db;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+.review-list-table .link-btn:hover {
+  color: #2980b9;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.action-buttons button {
+  padding: 0.35rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-view {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-view:hover {
+  background: #7f8c8d;
+}
+
+.btn-approve {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-approve:hover {
+  background: #219a52;
+}
+
+.btn-reject {
+  background: #e74c3c;
+  color: white;
+}
+
+.btn-reject:hover {
+  background: #c0392b;
+}
+
+.review-list-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #7f8c8d;
+  background: #f9f9f9;
+  border-radius: 8px;
+}

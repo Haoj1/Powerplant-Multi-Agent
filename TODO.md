@@ -7,15 +7,15 @@ High-level phases are ordered by priority. You can trim lower phases if time is 
 ### Phase 0 – Project Skeleton & Shared Library
 
 - [ ] **Initialize project structure**
-  - [ ] Create service folders: `simulator-service/`, `agent-monitor/`, `agent-diagnosis/`, `agent-ticket/`, `agent-review/`, `shared-lib/`
+  - [ ] Create service folders: `simulator-service/`, `agent-monitor/`, `agent-diagnosis/`, `agent-ticket/`, `agent-review/`, `shared_lib/`
   - [ ] Add minimal `main.py` for each service
   - [ ] Add basic `FastAPI` app and `GET /health` endpoint for each service
 - [ ] **Environment and configuration**
   - [ ] Create `.env.example` with placeholders (MQTT host/port, GitHub token, repo, etc.)
-  - [ ] Add `settings` module in `shared-lib` to load configuration from env
+  - [ ] Add `settings` module in `shared_lib` to load configuration from env
   - [ ] Decide logging directory structure (e.g. `logs/telemetry.jsonl`, `logs/alerts.jsonl`, etc.)
 - [ ] **Shared schemas and utilities**
-  - [ ] Create `shared-lib/models.py` with pydantic models for:
+  - [ ] Create `shared_lib/models.py` with pydantic models for:
     - [ ] `Telemetry`
     - [ ] `AlertEvent`
     - [ ] `DiagnosisReport`

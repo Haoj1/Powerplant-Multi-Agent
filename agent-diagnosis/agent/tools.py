@@ -58,12 +58,17 @@ def query_rules(keywords: str) -> str:
 
 
 @tool
-def query_telemetry(asset_id: str, since_ts: Optional[str] = None, limit: int = 50) -> str:
+def query_telemetry(
+    asset_id: str,
+    since_ts: Optional[str] = None,
+    until_ts: Optional[str] = None,
+    limit: int = 50,
+) -> str:
     """
     Query recent telemetry for an asset from the database.
     asset_id: e.g. pump01, pump02
-    since_ts: optional ISO timestamp to fetch telemetry from (e.g. 2025-02-11T10:00:00).
-              If not provided, returns the most recent rows.
+    since_ts: optional ISO timestamp (e.g. 2025-02-11T10:00:00). If not provided, no lower bound.
+    until_ts: optional ISO timestamp for upper bound. If not provided, no upper bound.
     limit: max rows to return (default 50)
     Returns telemetry as formatted text for analysis.
     """
@@ -71,7 +76,9 @@ def query_telemetry(asset_id: str, since_ts: Optional[str] = None, limit: int = 
     if not db:
         return "Database not available."
     try:
-        rows = db.query_telemetry(asset_id=asset_id, since_ts=since_ts, limit=limit)
+        rows = db.query_telemetry(
+            asset_id=asset_id, since_ts=since_ts, until_ts=until_ts, limit=limit
+        )
     except Exception as e:
         return f"Query error: {e}"
     if not rows:
@@ -97,19 +104,27 @@ def query_telemetry(asset_id: str, since_ts: Optional[str] = None, limit: int = 
 
 
 @tool
-def query_alerts(asset_id: str, limit: int = 10, since_ts: Optional[str] = None) -> str:
+def query_alerts(
+    asset_id: str,
+    limit: int = 10,
+    since_ts: Optional[str] = None,
+    until_ts: Optional[str] = None,
+) -> str:
     """
     Query recent alerts for an asset from the database.
     asset_id: e.g. pump01, pump02
     limit: max alerts to return (default 10)
-    since_ts: optional ISO timestamp to fetch alerts from.
+    since_ts: optional ISO timestamp for lower bound.
+    until_ts: optional ISO timestamp for upper bound.
     Returns alert details for context.
     """
     db = _get_db()
     if not db:
         return "Database not available."
     try:
-        rows = db.query_alerts(asset_id=asset_id, limit=limit, since_ts=since_ts)
+        rows = db.query_alerts(
+            asset_id=asset_id, limit=limit, since_ts=since_ts, until_ts=until_ts
+        )
     except Exception as e:
         return f"Query error: {e}"
     if not rows:

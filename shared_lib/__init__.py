@@ -1,27 +1,81 @@
-"""
-Compatibility layer: load shared-lib (hyphen) as shared_lib (underscore).
-Python does not allow hyphens in module names.
-"""
+"""Shared library for multi-agent powerplant monitoring system."""
 
-import sys
-import importlib.util
-from pathlib import Path
+from .models import (
+    Telemetry,
+    AlertEvent,
+    AlertDetail,
+    DiagnosisReport,
+    DiagnosisEvidence,
+    Ticket,
+    Feedback,
+    VisionDescription,
+    VisionImageReady,
+)
+from .config import Settings, get_settings
+from .utils import (
+    get_current_timestamp,
+    generate_id,
+    append_jsonl,
+    ensure_log_dir,
+)
 
-_here = Path(__file__).parent
-_shared_lib_path = _here.parent / "shared-lib"
+# RAG / Vector search (optional)
+try:
+    from .embeddings import EmbeddingModel, get_embedding_model
+    from .vector_db import (
+        init_vector_table,
+        insert_vector,
+        search_similar,
+        delete_vector,
+        add_text_to_vector_db,
+        search_text_in_vector_db,
+    )
+    from .vector_indexing import (
+        index_diagnosis,
+        index_alert,
+        index_feedback,
+        index_ticket,
+        index_chat_message,
+        index_vision_analysis,
+        index_rules,
+    )
+    _HAS_RAG = True
+except ImportError:
+    _HAS_RAG = False
 
-if not _shared_lib_path.is_dir():
-    raise ImportError(f"shared-lib directory not found: {_shared_lib_path}")
+__all__ = [
+    "Telemetry",
+    "AlertEvent",
+    "AlertDetail",
+    "DiagnosisReport",
+    "DiagnosisEvidence",
+    "Ticket",
+    "Feedback",
+    "VisionDescription",
+    "VisionImageReady",
+    "Settings",
+    "get_settings",
+    "get_current_timestamp",
+    "generate_id",
+    "append_jsonl",
+    "ensure_log_dir",
+]
 
-# Load each module from shared-lib into shared_lib.*
-for _name in ("config", "models", "utils", "db"):
-    _file = _shared_lib_path / f"{_name}.py"
-    if not _file.exists():
-        continue
-    _spec = importlib.util.spec_from_file_location(f"shared_lib.{_name}", _file)
-    _mod = importlib.util.module_from_spec(_spec)
-    sys.modules[f"shared_lib.{_name}"] = _mod
-    _spec.loader.exec_module(_mod)
-    setattr(sys.modules[__name__], _name, _mod)
-
-__all__ = ["models", "config", "utils", "db"]
+if _HAS_RAG:
+    __all__.extend([
+        "EmbeddingModel",
+        "get_embedding_model",
+        "init_vector_table",
+        "insert_vector",
+        "search_similar",
+        "delete_vector",
+        "add_text_to_vector_db",
+        "search_text_in_vector_db",
+        "index_diagnosis",
+        "index_alert",
+        "index_feedback",
+        "index_ticket",
+        "index_chat_message",
+        "index_vision_analysis",
+        "index_rules",
+    ])

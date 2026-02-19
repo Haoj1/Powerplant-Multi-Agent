@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any, Tuple
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from shared_lib.config import get_settings
@@ -49,6 +50,14 @@ app = FastAPI(
     title="Simulator Service",
     description="Generates telemetry data for powerplant assets",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Global state

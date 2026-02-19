@@ -107,7 +107,7 @@ The ReAct agent has the following tools; the LLM decides when to call them:
 
 ### shared_lib.db Extensions
 
-Add read-only query functions in `shared-lib/db.py`:
+Add read-only query functions in `shared_lib/db.py`:
 
 - `query_telemetry(asset_id: str, since_ts: str, limit: int = 100) -> List[dict]`
 - `query_alerts(asset_id: str, limit: int = 20) -> List[dict]`
@@ -158,7 +158,7 @@ DIAGNOSIS_RULES_PATH=agent-diagnosis/rules
 ## 9. Implementation Order
 
 1. **Rule documents**: Create `agent-diagnosis/rules/`, add 3–5 fault rules (bearing_wear, clogging, valve_stuck, etc.)
-2. **DB queries**: Add `query_telemetry`, `query_alerts` to `shared-lib/db.py`
+2. **DB queries**: Add `query_telemetry`, `query_alerts` to `shared_lib/db.py`
 3. **alert_id chain**: Modify Agent A `insert_alert` to return id; include it in MQTT payload
 4. **Tools**: Implement `query_rules`, `query_telemetry`, `query_alerts`
 5. **ReAct agent**: Set up agent + prompt with tools

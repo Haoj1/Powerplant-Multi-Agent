@@ -92,7 +92,7 @@ print(response.json())
 
 Telemetry is published to MQTT topic: `telemetry/{asset_id}` (default: `telemetry/pump01`)
 
-Telemetry format follows `shared-lib/models.py` Telemetry schema:
+Telemetry format follows `shared_lib/models.py` Telemetry schema:
 - `ts`: Timestamp
 - `plant_id`: Plant identifier
 - `asset_id`: Asset identifier
