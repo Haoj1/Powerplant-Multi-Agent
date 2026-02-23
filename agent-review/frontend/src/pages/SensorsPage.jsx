@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getTelemetry } from '../services/api'
 import SensorDashboard from '../components/sensors/SensorDashboard'
+import SensorCharts from '../components/sensors/SensorCharts'
 import AssetSelector from '../components/sensors/AssetSelector'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import './SensorsPage.css'
@@ -24,7 +25,7 @@ function SensorsPage() {
   const loadTelemetry = async () => {
     try {
       setLoading(true)
-      const data = await getTelemetry(selectedAsset, null, 1) // Get latest only
+      const data = await getTelemetry(selectedAsset, null, null, 1) // Get latest only
       setTelemetry(data && data.length > 0 ? data[0] : null)
     } catch (error) {
       console.error('Failed to load telemetry:', error)
@@ -55,6 +56,8 @@ function SensorsPage() {
       ) : (
         <div className="empty-state">No telemetry data available</div>
       )}
+
+      <SensorCharts assetId={selectedAsset} />
     </div>
   )
 }

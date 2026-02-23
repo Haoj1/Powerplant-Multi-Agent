@@ -49,10 +49,11 @@ export const getAlerts = async (assetId = null, limit = 20, offset = 0, severity
   return { data: response.data.data, total: response.data.total ?? 0 }
 }
 
-// Telemetry
-export const getTelemetry = async (assetId, sinceTs = null, limit = 100) => {
+// Telemetry (optionally with time window: since_ts, until_ts)
+export const getTelemetry = async (assetId, sinceTs = null, untilTs = null, limit = 500) => {
   const params = { asset_id: assetId, limit }
   if (sinceTs) params.since_ts = sinceTs
+  if (untilTs) params.until_ts = untilTs
   const response = await api.get('/telemetry', { params })
   return response.data.data
 }

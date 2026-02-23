@@ -4,6 +4,63 @@ Agent D 在「批准」审核时，可勾选「创建 Salesforce Case」，将�
 
 ---
 
+## 免费用户能用吗？能创建 Connected App 吗？
+
+**可以。** 常见情况如下：
+
+- **Developer Edition（开发者版）**：免费注册，支持 API、Connected App、完整设置菜单。适合个人开发/联调，推荐用这个创建 Connected App。
+- **免费试用（Trial）**：通常也支持 API 和 Connected App，和正式版功能类似。
+- **极简免费版（如 Salesforce CRM Free）**：可能没有 Setup 或 API，若看不到「App Manager」就说明当前版本不支持，可先注册一个 [Developer Edition](https://developer.salesforce.com/signup) 再按下面步骤操作。
+
+注册 Developer Edition：打开 [developer.salesforce.com/signup](https://developer.salesforce.com/signup)，填邮箱、姓名等，完成后用该账号登录即可使用 Setup 和 App Manager。
+
+---
+
+## 怎么创建 Connected App（详细步骤）
+
+1. **进入设置**  
+   登录 Salesforce 后，点击右上角 **齿轮图标** → **Setup**。
+
+2. **打开 App Manager**  
+   左侧 **Quick Find** 搜索框输入 **App Manager**，回车，进入 **App Manager** 页面。
+
+3. **新建 Connected App**  
+   点击右上角 **New Connected App**。
+
+4. **填写基本信息**  
+   - **Connected App Name**：必填，例如 `Agent D` 或 `My Ticket App`。  
+   - **API Name**：会自动根据名称生成，一般不用改。  
+   - **Contact Email**：填你的邮箱。  
+   - **Description**、**Logo** 等可留空。
+
+5. **启用 OAuth**  
+   勾选 **Enable OAuth Settings**。勾选后会出现：  
+   - **Callback URL**：必填，可填 `https://localhost` 或 `https://login.salesforce.com`（仅用于 OAuth 流程，本项目的密码模式不依赖回调）。  
+   - **Selected OAuth Scopes**：在左侧列表至少勾选：  
+     - **Access and manage your data (api)**  
+     - **Perform requests at any time (refresh_token, offline_access)**  
+   然后点 **Add** 移到右侧。
+
+6. **其他选项**  
+   - **Require Secret for Web Server Flow**：保持勾选（会生成 Consumer Secret）。  
+   - **Require Secret for Refresh Token Flow**：可选。  
+   - 其他保持默认即可。
+
+7. **保存并等待生效**  
+   点击 **Save**，再点 **Continue**。  
+   Salesforce 会提示 Connected App 需要 **2–10 分钟** 才会生效，生效后才能用 Consumer Key/Secret 换 Token。
+
+8. **拿到 Consumer Key 和 Consumer Secret**  
+   - 在 **App Manager** 列表里找到刚创建的 App，点击右侧 **▼** → **Manage**。  
+   - 在 **API (Enable OAuth Settings)** 区域可以看到 **Consumer Key**（即 `SALESFORCE_CLIENT_ID`）。  
+   - **Consumer Secret** 会显示为 *****，点击 **Click to reveal** 后复制，即 `SALESFORCE_CLIENT_SECRET`。  
+   - 若没有 **Manage**，可点 App 名称进入详情，在同一区域查看。
+
+9. **配置到项目**  
+   把 **Consumer Key**、**Consumer Secret** 和 **域名、用户名、密码+Security Token** 按文档「方式 B」填到 `.env` 即可。
+
+---
+
 ## 一步一步配置（手把手）
 
 任选一种方式：**方式 A** 最快（只填域名 + Token）；**方式 B** 适合长期用（用 Connected App 自动换 Token）。
@@ -110,6 +167,25 @@ SALESFORCE_PASSWORD=你的登录密码你的SecurityToken
 
 ---
 
+### 方式 C：Client Credentials Flow（仅 Client ID + Secret）
+
+若在 Connected App 里勾选了 **Enable Client Credentials Flow**，则只需配置 **域名 + Consumer Key + Consumer Secret**，无需用户名、密码和 Security Token。
+
+**重要**：启用 Client Credentials 后，必须在 Connected App 里指定 **Run As User**（以哪个用户身份调用 API）。  
+编辑该 App → 找到 **Client Credentials Flow** 区域 → 设置 **Run As** / **Run As User** 为某个用户（如你自己）→ 保存。否则会报错 `no client credentials user enabled`。
+
+在 **`.env`** 里填：
+
+```env
+SALESFORCE_DOMAIN=你的公司.my.salesforce.com
+SALESFORCE_CLIENT_ID=你的 Consumer Key
+SALESFORCE_CLIENT_SECRET=你的 Consumer Secret
+```
+
+不填 `SALESFORCE_ACCESS_TOKEN`、`SALESFORCE_USERNAME`、`SALESFORCE_PASSWORD`。程序会自动用 Client Credentials 流程换 Token。保存后重启服务即可。
+
+---
+
 ### 验证是否配好
 
 1. 确保 `.env` 里至少有两种之一：
@@ -120,6 +196,29 @@ SALESFORCE_PASSWORD=你的登录密码你的SecurityToken
 4. 到 Salesforce 里打开 **Cases** 列表，应能看到刚创建的 Case；本地 `tickets` 表也会有一条记录。
 
 若报错，检查：域名是否带 `https://`（不要带）、密码是否已拼接 Security Token、Connected App 是否已生效（等几分钟）。
+
+---
+
+### 两种 Flow 的区别（Connected App 里两个勾选）
+
+| Connected App 勾选 | 含义 | 脚本里对应 |
+|--------------------|------|------------|
+| **Enable Client Credentials Flow** | 用 Client ID + Secret 换 Token，无需用户名密码；需在 App 里设 **Run As User**。适合后端/脚本。 | 脚本会试：`grant_type=client_credentials`（[1/2]） |
+| **Enable Authorization Code and Credentials Flow** | 授权码流程：用户浏览器登录后拿 code，再用 code + Client ID/Secret 换 Token。需用户参与，脚本无法自动试。 | 脚本不试（需浏览器） |
+
+**Username-Password Flow** 对应组织设置里的 **Allow OAuth Username-Password Flows** + App 允许；脚本会试 `grant_type=password`（[2/2]）。
+
+跑 `python scripts/test_salesforce_connection.py` 会依次尝试 [1/2] Client Credentials、[2/2] Password，并打印各自成功或失败原因。
+
+---
+
+### 常见错误（测试脚本报错时对照）
+
+| 报错信息 | 原因 | 处理 |
+|----------|------|------|
+| `no client credentials user enabled` | Client Credentials 已开启，但未指定“以谁身份”运行 | 编辑 Connected App，在 **Client Credentials Flow** 里设置 **Run As User** 为某个用户，保存后等几分钟 |
+| `authentication failure`（Password 流程） | 用户名/密码认证失败 | ① `SALESFORCE_PASSWORD` 必须是 **登录密码 + Security Token** 直接拼接（无空格）<br>② Connected App 勾选 **Allow Username-Password Authentication**<br>③ `SALESFORCE_USERNAME` 填完整登录邮箱 |
+| `invalid_client` | Client ID 或 Secret 错误 | 核对 Consumer Key / Consumer Secret，或重新 Reveal 并复制 Secret |
 
 ---
 

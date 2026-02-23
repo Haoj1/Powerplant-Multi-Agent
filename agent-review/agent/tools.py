@@ -202,6 +202,157 @@ def analyze_image_with_vlm(
 
 
 @tool
+def query_salesforce_cases(
+    asset_id: Optional[str] = None,
+    created_since: Optional[str] = None,
+    created_until: Optional[str] = None,
+    severity: Optional[str] = None,
+    keywords: Optional[str] = None,
+    limit: int = 20,
+) -> str:
+    """
+    Query Salesforce Cases by filters such as asset_id, time window, severity, and keywords.
+
+    - asset_id: 字符串，例如 pump01。当前会在 Case 的 Subject 中模糊搜索（因为默认没有单独的资产字段）。
+    - created_since / created_until: Case 创建时间窗口（ISO 格式，如 2025-02-11T10:00:00Z）。
+    - severity: 映射到 Case 的 Priority 字段（如 High/Medium/Low，或你 Org 中配置的值）。
+    - keywords: 关键字（空格分隔），会在 Subject 和 Description 中模糊搜索。
+    """
+    try:
+        from shared_lib.integrations import get_ticket_connector
+        from shared_lib.config import get_settings
+    except Exception as e:
+        return f"Integrations not available: {e}"
+
+    connector = None
+    try:
+        connector = get_ticket_connector()
+    except Exception:
+        connector = None
+
+    if not connector or not getattr(connector, "access_token", None):
+        return "Salesforce is not configured. Check SALESFORCE_* env vars (see docs/EXTERNAL_API_CONFIG.md)."
+
+    base_url = getattr(connector, "base_url", None)
+    if not base_url:
+        # Fallback: build from settings
+        settings = get_settings()
+        domain = (settings.salesforce_domain or "").strip().replace("https://", "").replace("http://", "")
+        if not domain:
+            return "Salesforce domain is not configured."
+        base_url = f"https://{domain}"
+
+    import urllib.parse
+    import urllib.request
+    import urllib.error
+    import json
+    from datetime import datetime
+
+    def _escape_soql_literal(val: str) -> str:
+        # Very small helper to escape single quotes in SOQL string literals
+        return (val or "").replace("\\", "\\\\").replace("'", "\\'")
+
+    def _format_sf_datetime(ts: str) -> str:
+        """Convert various ISO-like inputs to Salesforce datetime literal (YYYY-MM-DDThh:mm:ssZ)."""
+        if not ts:
+            return ""
+        t = ts.strip()
+        # If already ends with Z or offset, trust user input
+        if "T" in t and (t.endswith("Z") or "+" in t or "-" in t[10:]):
+            return t
+        try:
+            # Try parsing generic ISO and reformat to Z
+            dt = datetime.fromisoformat(t)
+            return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        except Exception:
+            # If only date (YYYY-MM-DD)
+            try:
+                dt = datetime.strptime(t, "%Y-%m-%d")
+                return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except Exception:
+                # Fall back to raw string (user must ensure correctness)
+                return t
+
+    where_clauses: List[str] = []
+
+    if asset_id:
+        like_val = _escape_soql_literal(str(asset_id))
+        # Our Cases put asset id in Subject like "[asset] ..." by default; also do generic LIKE
+        where_clauses.append(f"(Subject LIKE '%{like_val}%' OR Subject LIKE '%[{like_val}]%')")
+
+    if severity:
+        sev = _escape_soql_literal(str(severity))
+        where_clauses.append(f"Priority = '{sev}'")
+
+    if created_since:
+        sf_since = _format_sf_datetime(created_since)
+        if sf_since:
+            where_clauses.append(f"CreatedDate >= {sf_since}")
+
+    if created_until:
+        sf_until = _format_sf_datetime(created_until)
+        if sf_until:
+            where_clauses.append(f"CreatedDate <= {sf_until}")
+
+    if keywords:
+        kws = [k.strip() for k in str(keywords).split() if k.strip()]
+        for kw in kws:
+            k = _escape_soql_literal(kw)
+            where_clauses.append(f"(Subject LIKE '%{k}%' OR Description LIKE '%{k}%')")
+
+    where_sql = ""
+    if where_clauses:
+        where_sql = " WHERE " + " AND ".join(where_clauses)
+
+    soql = (
+        "SELECT Id, Subject, Status, Priority, Origin, CreatedDate "
+        "FROM Case"
+        f"{where_sql} "
+        f"ORDER BY CreatedDate DESC LIMIT {max(1, min(limit, 200))}"
+    )
+
+    try:
+        query_url = f"{base_url}/services/data/v58.0/query"
+        params = urllib.parse.urlencode({"q": soql})
+        url = f"{query_url}?{params}"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Authorization": f"Bearer {connector.access_token}",
+                "Content-Type": "application/json",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = json.loads(resp.read().decode())
+    except urllib.error.HTTPError as e:
+        try:
+            err = e.read().decode()
+        except Exception:
+            err = str(e)
+        return f"Salesforce query failed: HTTP {e.code} {e.reason} - {err[:400]}"
+    except Exception as e:
+        return f"Salesforce query error: {e}"
+
+    records = body.get("records", [])
+    if not records:
+        return "No Salesforce Cases matched the filters."
+
+    lines: List[str] = []
+    for r in records:
+        cid = r.get("Id", "")
+        sub = r.get("Subject", "")
+        status = r.get("Status", "")
+        prio = r.get("Priority", "")
+        origin = r.get("Origin", "")
+        created = r.get("CreatedDate", "")
+        lines.append(
+            f"Id={cid} Created={created} Status={status} Priority={prio} Origin={origin} Subject={sub}"
+        )
+
+    return "\n".join(lines)
+
+
+@tool
 def query_rules(keywords: str) -> str:
     """Search diagnosis rules by symptom, signal, or keywords (e.g. vibration, bearing, clogging)."""
     rules_dir = _get_rules_dir()
@@ -446,6 +597,7 @@ def get_review_tools() -> List:
         query_telemetry,
         query_vision_images,
         analyze_image_with_vlm,
+        query_salesforce_cases,
         query_rules,
     ]
     
