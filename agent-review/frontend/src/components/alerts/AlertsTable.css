@@ -24,6 +24,10 @@
   color: #333;
 }
 
+.alerts-table-row-clickable {
+  cursor: pointer;
+}
+
 .alerts-table tbody tr:hover {
   background: #fafafa;
 }

@@ -21,6 +21,20 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
+.modal-back {
+  background: none;
+  border: none;
+  color: #3498db;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0 0.5rem 0 0;
+  margin-right: 0.5rem;
+}
+
+.modal-back:hover {
+  text-decoration: underline;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -28,6 +42,11 @@
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #eee;
   background: #f9f9f9;
+}
+
+.modal-header-left {
+  display: flex;
+  align-items: center;
 }
 
 .modal-header h3 {
@@ -173,4 +192,68 @@
 
 .modal-footer .btn-close:hover {
   background: #7f8c8d;
+}
+
+/* Approve form footer buttons */
+.modal-footer .footer-buttons {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.modal-footer .footer-buttons .btn-cancel {
+  padding: 0.5rem 1.25rem;
+  background: #ecf0f1;
+  color: #2c3e50;
+  border: 1px solid #bdc3c7;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.modal-footer .footer-buttons .btn-cancel:hover {
+  background: #dfe6e9;
+  border-color: #95a5a6;
+}
+
+.modal-footer .footer-buttons .btn-approve-only {
+  padding: 0.5rem 1.25rem;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.modal-footer .footer-buttons .btn-approve-only:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.modal-footer .footer-buttons .btn-approve-only:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-footer .footer-buttons .btn-submit {
+  padding: 0.5rem 1.25rem;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.modal-footer .footer-buttons .btn-submit:hover:not(:disabled) {
+  background: #219a52;
+}
+
+.modal-footer .footer-buttons .btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

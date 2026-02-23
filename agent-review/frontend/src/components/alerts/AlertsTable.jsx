@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { timeAgo } from '../../utils/timeAgo'
 import './AlertsTable.css'
 
-function AlertsTable({ alerts }) {
+function AlertsTable({ alerts, onAlertClick }) {
   if (!alerts || alerts.length === 0) {
     return (
       <div className="alerts-table-empty">
@@ -28,7 +28,11 @@ function AlertsTable({ alerts }) {
         </thead>
         <tbody>
           {alerts.map((a) => (
-            <tr key={a.alert_id}>
+            <tr
+              key={a.alert_id}
+              className="alerts-table-row-clickable"
+              onClick={() => onAlertClick && onAlertClick(a)}
+            >
               <td>{a.alert_id}</td>
               <td>{a.asset_id || '-'}</td>
               <td>{a.signal || '-'}</td>
@@ -38,7 +42,7 @@ function AlertsTable({ alerts }) {
                 </span>
               </td>
               <td>{a.score != null ? Number(a.score).toFixed(2) : '-'}</td>
-              <td>
+              <td onClick={(e) => e.stopPropagation()}>
                 {a.diagnosis_id != null ? (
                   <Link to="/review" className="link-btn">
                     #{a.diagnosis_id}
@@ -47,7 +51,7 @@ function AlertsTable({ alerts }) {
                   '-'
                 )}
               </td>
-              <td>
+              <td onClick={(e) => e.stopPropagation()}>
                 {a.ticket_url ? (
                   <a href={a.ticket_url} target="_blank" rel="noopener noreferrer" className="link-btn">
                     {a.ticket_id || 'Ticket'}

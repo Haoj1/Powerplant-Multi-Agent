@@ -163,14 +163,33 @@ def query_review_requests_paginated(
             conn.close()
 
 
+def get_review_request_by_diagnosis_id(diagnosis_id: int, status: str = "pending") -> Optional[Dict[str, Any]]:
+    """Get review request by diagnosis_id (e.g. to check if already in queue)."""
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.execute(
+                """SELECT id, diagnosis_id, plant_id, asset_id, ts, status, created_at, resolved_at
+                   FROM review_requests WHERE diagnosis_id = ? AND status = ? LIMIT 1""",
+                (diagnosis_id, status),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            cols = [c[0] for c in cur.description]
+            return dict(zip(cols, row))
+        finally:
+            conn.close()
+
+
 def insert_review_request(
     diagnosis_id: int,
     plant_id: str,
     asset_id: str,
     ts: str,
     status: str = "pending",
-) -> None:
-    """Insert a review request for Agent D."""
+) -> Optional[int]:
+    """Insert a review request for Agent D. Returns the new review_request id."""
     with _lock:
         conn = get_connection()
         try:
@@ -179,7 +198,9 @@ def insert_review_request(
                    VALUES (?,?,?,?,?)""",
                 (diagnosis_id, plant_id, asset_id, ts, status),
             )
+            row_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
             conn.commit()
+            return row_id
         finally:
             conn.close()
 
@@ -360,6 +381,33 @@ def get_diagnosis_by_id(diagnosis_id: int) -> Optional[Dict[str, Any]]:
                           recommended_actions, evidence, alert_id
                    FROM diagnosis WHERE id = ?""",
                 (diagnosis_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            cols = [c[0] for c in cur.description]
+            r = dict(zip(cols, row))
+            for key in ("recommended_actions", "evidence"):
+                if r.get(key) and isinstance(r[key], str):
+                    try:
+                        r[key] = json.loads(r[key])
+                    except Exception:
+                        pass
+            return r
+        finally:
+            conn.close()
+
+
+def get_diagnosis_by_alert_id(alert_id: int) -> Optional[Dict[str, Any]]:
+    """Get the diagnosis linked to an alert (if any)."""
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.execute(
+                """SELECT id, ts, plant_id, asset_id, root_cause, confidence, impact,
+                          recommended_actions, evidence, alert_id
+                   FROM diagnosis WHERE alert_id = ? ORDER BY ts DESC LIMIT 1""",
+                (alert_id,),
             )
             row = cur.fetchone()
             if not row:
@@ -594,6 +642,23 @@ def get_chat_session_with_messages(session_id: int) -> Optional[Dict[str, Any]]:
                 m["steps"] = [dict(zip(step_cols, r)) for r in step_rows]
             session["messages"] = messages
             return session
+        finally:
+            conn.close()
+
+
+def delete_chat_session(session_id: int) -> bool:
+    """Delete a chat session and all its messages/steps. Returns True if deleted."""
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.execute("SELECT id FROM chat_messages WHERE session_id = ?", (session_id,))
+            msg_ids = [r[0] for r in cur.fetchall()]
+            for mid in msg_ids:
+                conn.execute("DELETE FROM chat_steps WHERE message_id = ?", (mid,))
+            conn.execute("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
+            cur = conn.execute("DELETE FROM chat_sessions WHERE id = ?", (session_id,))
+            conn.commit()
+            return cur.rowcount > 0
         finally:
             conn.close()
 

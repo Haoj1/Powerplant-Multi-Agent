@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getChatSessions, getChatSession } from '../services/api'
+import { getChatSessions, getChatSession, deleteChatSession } from '../services/api'
 import ChatLayout from '../components/chat/ChatLayout'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import './ChatPage.css'
@@ -38,6 +38,20 @@ function ChatPage() {
     setCurrentSession(null)
   }
 
+  const handleDeleteSession = async (sessionId, e) => {
+    e?.stopPropagation?.()
+    if (!confirm('Delete this conversation?')) return
+    try {
+      await deleteChatSession(sessionId)
+      if (currentSession?.session?.id === sessionId) {
+        setCurrentSession(null)
+      }
+      loadSessions()
+    } catch (error) {
+      console.error('Failed to delete session:', error)
+    }
+  }
+
   return (
     <div className="chat-page">
       {loading ? (
@@ -49,6 +63,7 @@ function ChatPage() {
           onSelectSession={handleSelectSession}
           onNewSession={handleNewSession}
           onSessionUpdate={loadSessions}
+          onDeleteSession={handleDeleteSession}
         />
       )}
     </div>

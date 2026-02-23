@@ -51,9 +51,9 @@ function SensorCharts({ assetId }) {
     let untilTs
 
     if (timeRange === 'custom') {
-      // 手动时间窗口：使用用户输入的 datetime-local
+      // Manual time window: use user-entered datetime-local
       if (!customFrom && !customTo) {
-        // 自定义时间段未填完整，不请求
+        // Custom time range incomplete, skip request
         return
       }
       const fromDate = customFrom ? new Date(customFrom) : null

@@ -1,0 +1,128 @@
+.rules-list-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.rules-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.rules-list-table td {
+  background: #fff;
+}
+
+.rules-list-table th,
+.rules-list-table td {
+  padding: 0.875rem 1.25rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.rules-list-table thead {
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.rules-list-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+.rules-list-table th:nth-child(1) { min-width: 180px; }
+.rules-list-table th:nth-child(2) { min-width: 140px; }
+.rules-list-table th:nth-child(3) { min-width: 140px; }
+
+.rules-list-table tbody tr {
+  border-bottom: 1px solid #eee;
+}
+
+.rules-list-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.rules-list-table tbody tr:hover td {
+  background: #f8f9fa;
+}
+
+.rules-list-table code {
+  font-size: 0.85rem;
+  background: #f0f0f0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: ui-monospace, monospace;
+}
+
+.rules-list-table .action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rules-list-table .btn-view {
+  padding: 0.4rem 0.85rem;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+
+.rules-list-table .btn-view:hover {
+  background: #2980b9;
+}
+
+.rules-list-table .btn-delete {
+  padding: 0.4rem 0.85rem;
+  background: #fff;
+  border: 1px solid #e74c3c;
+  color: #e74c3c;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.rules-list-table .btn-delete:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+.rules-list-empty {
+  padding: 2.5rem 2rem;
+  text-align: center;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px dashed #ddd;
+}
+
+.rules-list-empty p {
+  margin: 0.5rem 0;
+  color: #555;
+  line-height: 1.5;
+}
+
+.rules-list-empty .hint {
+  font-size: 0.9rem;
+  color: #888;
+  margin-top: 0.5rem;
+}
+
+.rules-list-empty .path-hint {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.rules-list-empty .path-hint code {
+  background: #eee;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}

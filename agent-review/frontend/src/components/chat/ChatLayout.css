@@ -39,9 +39,42 @@
   overflow-y: auto;
 }
 
+.session-list-item {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.session-list-item:hover .session-delete-btn {
+  opacity: 1;
+}
+
+.session-delete-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin-left: 0.25rem;
+  border: none;
+  background: transparent;
+  color: #999;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.session-delete-btn:hover {
+  color: #e74c3c;
+  background: #fdeaea;
+}
+
 .session-item {
+  flex: 1;
   display: block;
-  width: 100%;
+  min-width: 0;
   padding: 0.6rem 1rem;
   text-align: left;
   border: none;

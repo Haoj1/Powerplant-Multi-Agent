@@ -1,102 +1,102 @@
-# Agent D Frontend 安装指南
+# Agent D Frontend Installation Guide
 
-## 前置要求
+## Prerequisites
 
 - Node.js >= 16.0.0
 - npm >= 7.0.0
 
-## 安装步骤
+## Installation Steps
 
-### 1. 进入前端目录
+### 1. Enter the frontend directory
 
 ```bash
 cd agent-review/frontend
 ```
 
-### 2. 安装依赖
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3. 启动开发服务器
+### 3. Start the development server
 
 ```bash
 npm run dev
 ```
 
-前端将在 `http://localhost:3000` 启动。
+The frontend will start at `http://localhost:3000`.
 
-## 配置
+## Configuration
 
-### API 代理
+### API Proxy
 
-前端通过 Vite 代理访问后端 API：
-- Agent D Backend: `http://localhost:8005` (代理到 `/api`)
-- Simulator: `http://localhost:8001` (直接访问)
+The frontend accesses backend APIs via Vite proxy:
+- Agent D Backend: `http://localhost:8005` (proxied to `/api`)
+- Simulator: `http://localhost:8001` (direct access)
 
-如需修改，编辑 `vite.config.js`。
+To modify, edit `vite.config.js`.
 
-## 开发
+## Development
 
-### 项目结构
+### Project Structure
 
 ```
 frontend/
 ├── src/
-│   ├── components/      # 组件
-│   │   ├── layout/      # 布局组件
-│   │   ├── review/      # Review Queue 组件
-│   │   ├── alerts/      # Alerts 组件
-│   │   ├── sensors/     # Sensors 组件
-│   │   ├── chat/        # Chat 组件
-│   │   ├── scenarios/   # Scenarios 组件
-│   │   └── common/      # 通用组件
-│   ├── pages/           # 页面组件
-│   ├── services/        # API 服务
-│   ├── hooks/           # 自定义 Hooks
-│   ├── utils/           # 工具函数
-│   ├── App.jsx          # 主应用
-│   └── main.jsx         # 入口
-├── public/              # 静态资源
+│   ├── components/      # Components
+│   │   ├── layout/      # Layout components
+│   │   ├── review/      # Review Queue components
+│   │   ├── alerts/      # Alerts components
+│   │   ├── sensors/     # Sensors components
+│   │   ├── chat/        # Chat components
+│   │   ├── scenarios/   # Scenarios components
+│   │   └── common/      # Common components
+│   ├── pages/           # Page components
+│   ├── services/        # API services
+│   ├── hooks/           # Custom hooks
+│   ├── utils/           # Utility functions
+│   ├── App.jsx          # Main app
+│   └── main.jsx         # Entry point
+├── public/              # Static assets
 ├── package.json
 └── vite.config.js
 ```
 
-### 已创建的骨架文件
+### Skeleton files created
 
-- ✅ 项目配置（package.json, vite.config.js）
-- ✅ 路由和布局（App.jsx, DashboardLayout）
-- ✅ 5 个页面骨架（ReviewQueue, Alerts, Sensors, Chat, Scenarios）
-- ✅ API 服务（api.js, simulatorApi.js）
-- ✅ 占位组件（所有组件都有占位实现）
+- ✅ Project config (package.json, vite.config.js)
+- ✅ Routes and layout (App.jsx, DashboardLayout)
+- ✅ 5 page skeletons (ReviewQueue, Alerts, Sensors, Chat, Scenarios)
+- ✅ API services (api.js, simulatorApi.js)
+- ✅ Placeholder components (all components have placeholder implementations)
 
-### 下一步
+### Next steps
 
-需要实现的具体组件功能：
-1. ReviewQueuePage 的组件（ReviewListTable, DiagnosisDetailModal）
-2. AlertsPage 的组件（AlertsTable）
-3. SensorsPage 的组件（SensorDashboard, AssetSelector）
-4. ChatPage 的组件（ChatLayout, ReAct 步骤显示）
-5. ScenariosPage 的组件（ScenarioListTable, LoadScenarioModal, TriggerAlertModal）
+Components to implement:
+1. ReviewQueuePage components (ReviewListTable, DiagnosisDetailModal)
+2. AlertsPage components (AlertsTable)
+3. SensorsPage components (SensorDashboard, AssetSelector)
+4. ChatPage components (ChatLayout, ReAct step display)
+5. ScenariosPage components (ScenarioListTable, LoadScenarioModal, TriggerAlertModal)
 
-## 构建生产版本
+## Build for production
 
 ```bash
 npm run build
 ```
 
-输出在 `dist/` 目录。
+Output is in the `dist/` directory.
 
-## 故障排查
+## Troubleshooting
 
-### 端口冲突
+### Port conflict
 
-如果 3000 端口被占用，修改 `vite.config.js` 中的 `server.port`。
+If port 3000 is in use, change `server.port` in `vite.config.js`.
 
-### API 连接失败
+### API connection failed
 
-确保：
-1. Agent D 后端运行在 `http://localhost:8005`
-2. Simulator 运行在 `http://localhost:8001`
-3. CORS 已配置（后端已配置 `allow_origins=["*"]`）
+Ensure:
+1. Agent D backend is running at `http://localhost:8005`
+2. Simulator is running at `http://localhost:8001`
+3. CORS is configured (backend has `allow_origins=["*"]`)

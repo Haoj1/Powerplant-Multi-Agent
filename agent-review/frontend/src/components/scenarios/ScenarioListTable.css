@@ -2,20 +2,30 @@
   overflow-x: auto;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  background: #fff;
+  background: #fff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .scenario-list-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  background: #fff;
+}
+
+.scenario-list-table td {
+  background: #fff;
 }
 
 .scenario-list-table th,
 .scenario-list-table td {
-  padding: 0.75rem 1rem;
+  padding: 0.875rem 1.25rem;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.scenario-list-table thead {
+  border-bottom: 2px solid #e0e0e0;
 }
 
 .scenario-list-table th {
@@ -24,8 +34,16 @@
   color: #333;
 }
 
-.scenario-list-table tbody tr:hover {
-  background: #fafafa;
+.scenario-list-table tbody tr {
+  border-bottom: 1px solid #eee;
+}
+
+.scenario-list-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.scenario-list-table tbody tr:hover td {
+  background: #f8f9fa;
 }
 
 .scenario-list-table .badge {

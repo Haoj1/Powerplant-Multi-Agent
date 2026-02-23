@@ -2,9 +2,42 @@
   width: 100%;
 }
 
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.page-header h2 {
+  margin: 0;
+}
+
+.page-tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.page-tabs button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background: #f9f9f9;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.page-tabs button.active {
+  background: #3498db;
+  color: white;
+  border-color: #3498db;
+}
+
 .actions {
   display: flex;
   gap: 0.75rem;
+  margin-left: auto;
 }
 
 .btn-primary {

@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm'
 import { chatAskStream } from '../../services/api'
 import './ChatLayout.css'
 
-function ChatLayout({ sessions, currentSession, onSelectSession, onNewSession, onSessionUpdate }) {
+function ChatLayout({ sessions, currentSession, onSelectSession, onNewSession, onSessionUpdate, onDeleteSession }) {
   const [input, setInput] = useState('')
   const [streamingMessage, setStreamingMessage] = useState(null)
   const [streamingSteps, setStreamingSteps] = useState([])
@@ -73,7 +73,7 @@ function ChatLayout({ sessions, currentSession, onSelectSession, onNewSession, o
         </button>
         <ul className="session-list">
           {sessions.map((s) => (
-            <li key={s.id}>
+            <li key={s.id} className="session-list-item">
               <button
                 type="button"
                 className={`session-item ${currentSession?.session?.id === s.id ? 'active' : ''}`}
@@ -84,6 +84,17 @@ function ChatLayout({ sessions, currentSession, onSelectSession, onNewSession, o
                   {s.updated_at ? new Date(s.updated_at).toLocaleDateString() : ''}
                 </span>
               </button>
+              {onDeleteSession && (
+                <button
+                  type="button"
+                  className="session-delete-btn"
+                  onClick={(e) => onDeleteSession(s.id, e)}
+                  title="Delete conversation"
+                  aria-label="Delete"
+                >
+                  ×
+                </button>
+              )}
             </li>
           ))}
         </ul>

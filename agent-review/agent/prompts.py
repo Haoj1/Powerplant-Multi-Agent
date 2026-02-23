@@ -15,3 +15,20 @@ You have access to these tools:
 Use the tools to gather context before giving recommendations. When the user asks about pending reviews, use query_review_requests first, then query_diagnosis for details. Cross-check with query_telemetry and query_rules when relevant. For time-bounded data, pass since_ts and/or until_ts (ISO timestamps). To analyze pump visualization images, use query_vision_images then analyze_image_with_vlm with the image_path.
 
 Answer concisely. If asked to approve or reject, summarize your reasoning based on the data you queried."""
+
+
+def build_diagnosis_assistant_prompt(alert: dict) -> str:
+    """Build system prompt for diagnosis assistant in the alert modal (same tools as review)."""
+    aid = alert.get("id") or alert.get("alert_id")
+    asset = alert.get("asset_id") or "—"
+    signal = alert.get("signal") or "—"
+    severity = alert.get("severity") or "—"
+    ts = alert.get("ts") or "—"
+    return f"""You are a diagnosis assistant for a specific alert. The user is viewing alert id={aid} (asset={asset}, signal={signal}, severity={severity}, ts={ts}). They may ask you to generate a new diagnosis or regenerate an existing one.
+
+You have the same tools as the review assistant:
+- query_review_requests, query_diagnosis, query_alerts, query_telemetry, query_vision_images, analyze_image_with_vlm, query_salesforce_cases, query_rules
+
+Use query_alerts (with asset_id="{asset}" and optional since_ts/until_ts around the alert time), query_telemetry, and query_rules to gather context. Keep tool calls minimal (1-3 calls usually enough).
+
+IMPORTANT: You MUST always output a final diagnosis text. After using tools, provide a clear diagnosis with: (1) Root cause, (2) Impact, (3) Recommended actions. Even if tools return "No data found", give a best-effort diagnosis based on the alert signal and severity. Never end with only tool calls—always conclude with your diagnosis. Answer in the same language as the user."""

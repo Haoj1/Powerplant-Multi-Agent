@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getAlerts } from '../services/api'
 import AlertsTable from '../components/alerts/AlertsTable'
+import AlertDiagnosisModal from '../components/alerts/AlertDiagnosisModal'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import Pagination from '../components/common/Pagination'
 import './AlertsPage.css'
@@ -14,6 +15,7 @@ function AlertsPage() {
   const [filters, setFilters] = useState({ asset_id: '', severity: '' })
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const [selectedAlertId, setSelectedAlertId] = useState(null)
 
   useEffect(() => {
     setPage(1)
@@ -82,13 +84,20 @@ function AlertsPage() {
         <LoadingSpinner />
       ) : (
         <>
-          <AlertsTable alerts={alerts} />
+          <AlertsTable alerts={alerts} onAlertClick={(a) => setSelectedAlertId(a.alert_id)} />
           <Pagination
             page={page}
             pageSize={pageSize}
             total={total}
             onPageChange={setPage}
           />
+          {selectedAlertId != null && (
+            <AlertDiagnosisModal
+              alertId={selectedAlertId}
+              onClose={() => setSelectedAlertId(null)}
+              onDiagnosisCreated={() => loadAlerts()}
+            />
+          )}
         </>
       )}
     </div>

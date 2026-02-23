@@ -1,0 +1,64 @@
+.view-rule-modal.modal-content {
+  max-width: 560px;
+  width: 100%;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.view-rule-modal .modal-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #eee;
+  background: #f9f9f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.view-rule-modal .modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.view-rule-modal .modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.view-rule-modal .modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.view-rule-modal .view-rule-loading {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.view-rule-modal .view-rule-error {
+  padding: 1rem;
+  background: #fee;
+  color: #c0392b;
+  border-radius: 6px;
+}
+
+.view-rule-modal .view-rule-content {
+  margin: 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: ui-monospace, 'Consolas', monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
