@@ -213,10 +213,10 @@ def query_salesforce_cases(
     """
     Query Salesforce Cases by filters such as asset_id, time window, severity, and keywords.
 
-    - asset_id: 字符串，例如 pump01。当前会在 Case 的 Subject 中模糊搜索（因为默认没有单独的资产字段）。
-    - created_since / created_until: Case 创建时间窗口（ISO 格式，如 2025-02-11T10:00:00Z）。
-    - severity: 映射到 Case 的 Priority 字段（如 High/Medium/Low，或你 Org 中配置的值）。
-    - keywords: 关键字（空格分隔），会在 Subject 和 Description 中模糊搜索。
+    - asset_id: e.g. pump01. Searched in Case Subject (no dedicated asset field by default).
+    - created_since / created_until: Case creation time window (ISO format, e.g. 2025-02-11T10:00:00Z).
+    - severity: Maps to Case Priority (e.g. High/Medium/Low, or your org's values).
+    - keywords: Space-separated; fuzzy search in Subject and Description.
     """
     try:
         from shared_lib.integrations import get_ticket_connector

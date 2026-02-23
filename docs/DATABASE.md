@@ -31,9 +31,9 @@ Each table has **time-oriented indexes** so agents can query by time range effic
 | **tickets**      | Agent D (after approval, e.g. SF Case) | `(asset_id, ts)`, `(status)`, `(ticket_id)`, `(diagnosis_id)` |
 | **feedback**     | Agent D review feedback   | `(ticket_id)`, `(ts)`, `(ts, asset_id)` |
 
-- **`(ts)`** — 按时间范围查询（如「最近 1 小时」）
-- **`(ts, asset_id)`** — 先按时间范围再按资产过滤
-- **`(asset_id, ts)`** — 先按资产再按时间（如「某泵最近 N 条」）
+- **`(ts)`** — Query by time range (e.g. "last 1 hour")
+- **`(ts, asset_id)`** — Time range first, then filter by asset
+- **`(asset_id, ts)`** — Asset first, then time (e.g. "last N rows for pump")
 
 ## When each component writes to the DB
 

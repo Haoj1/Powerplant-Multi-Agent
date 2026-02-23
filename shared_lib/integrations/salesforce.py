@@ -3,9 +3,9 @@ Salesforce Case connector for Agent D approve flow.
 
 Auth:
 - Preferred: SALESFORCE_DOMAIN + SALESFORCE_CLIENT_ID + SALESFORCE_CLIENT_SECRET + SALESFORCE_USERNAME + SALESFORCE_PASSWORD
-  (Password flow, where SALESFORCE_PASSWORD = 登录密码 + Security Token)
-- Optional: SALESFORCE_DOMAIN + SALESFORCE_ACCESS_TOKEN (直接使用现成的 token)
-- Optional: SALESFORCE_DOMAIN + SALESFORCE_CLIENT_ID + SALESFORCE_CLIENT_SECRET (Client Credentials Flow，若已在 Connected App 中配置 Run As User)
+  (Password flow, where SALESFORCE_PASSWORD = login password + Security Token)
+- Optional: SALESFORCE_DOMAIN + SALESFORCE_ACCESS_TOKEN (use pre-obtained token)
+- Optional: SALESFORCE_DOMAIN + SALESFORCE_CLIENT_ID + SALESFORCE_CLIENT_SECRET (Client Credentials Flow, if Run As User is set in Connected App)
 """
 
 import json
@@ -42,10 +42,10 @@ class SalesforceConnector(TicketConnector):
     token = (s.salesforce_access_token or "").strip()
     if not domain:
       return None
-    # 1) 直接使用预先配置的 access_token
+    # 1) Use pre-configured access_token
     if token:
       return cls(domain=domain, access_token=token)
-    # 2) 尝试 Password Flow（USERNAME + PASSWORD(密码+Token)）
+    # 2) Try Password Flow (USERNAME + PASSWORD with Security Token)
     token = cls._get_token_password_flow(s, domain) or cls._get_token_client_credentials(s, domain)
     if not token:
       return None

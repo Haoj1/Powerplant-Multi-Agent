@@ -4,12 +4,12 @@ Test Salesforce connection using .env credentials.
 Run from project root: python scripts/test_salesforce_connection.py
 
 Two flows (both are tried in order):
-  1. Client Credentials Flow  = Connected App 里 "Enable Client Credentials Flow"
-     → 只用 CLIENT_ID + CLIENT_SECRET，需在 App 里设 Run As User
-  2. Username-Password Flow   = 组织设置 "Allow OAuth Username-Password Flows" + App 允许
-     → 用 USERNAME + PASSWORD(密码+Security Token) + CLIENT_ID + CLIENT_SECRET
+  1. Client Credentials Flow = "Enable Client Credentials Flow" in Connected App
+     -> Uses only CLIENT_ID + CLIENT_SECRET; requires Run As User in App
+  2. Username-Password Flow  = Org setting "Allow OAuth Username-Password Flows" + App enabled
+     -> Uses USERNAME + PASSWORD (password + Security Token) + CLIENT_ID + CLIENT_SECRET
 
-"Enable Authorization Code and Credentials Flow" 是授权码流程（需浏览器登录），脚本无法自动试。
+"Enable Authorization Code and Credentials Flow" requires browser login; this script cannot test it.
 """
 import sys
 from pathlib import Path
@@ -101,7 +101,7 @@ def main():
                 print(f"  -> Failed: {msg}")
             print()
 
-        # [2/2] Username-Password Flow (Allow OAuth Username-Password + App 允许)
+        # [2/2] Username-Password Flow (Allow OAuth Username-Password + App enabled)
         if have_user and have_client:
             print("[2/2] Username-Password Flow (grant_type=password)")
             data = urllib.parse.urlencode({

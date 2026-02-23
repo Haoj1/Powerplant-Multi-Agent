@@ -1,76 +1,76 @@
-# 多模态功能快速开始
+# Multimodal Feature Quick Start
 
-## 1. 安装依赖
+## 1. Install Dependencies
 
 ```bash
 pip install pyvista anthropic
-# 或
+# or
 pip install -r requirements.txt
 ```
 
-## 2. 配置 API Key
+## 2. Configure API Key
 
-在 `.env` 文件中添加（**二选一**）：
+Add to `.env` (**choose one**):
 
-**选项A：Claude Vision（推荐）**
+**Option A: Claude Vision (recommended)**
 ```bash
 VLM_PROVIDER=claude
-ANTHROPIC_API_KEY=sk-ant-xxxxx  # 你的真实 key
+ANTHROPIC_API_KEY=sk-ant-xxxxx  # your real key
 ```
 
-**选项B：OpenAI GPT-4V**
+**Option B: OpenAI GPT-4V**
 ```bash
 VLM_PROVIDER=openai
-OPENAI_API_KEY=sk-proj-xxxxx  # 你的真实 key
+OPENAI_API_KEY=sk-proj-xxxxx  # your real key
 ```
 
-**获取 API Key：**
+**Get API Keys:**
 - Claude: https://console.anthropic.com/ → Settings → API Keys
 - OpenAI: https://platform.openai.com/api-keys
 
-## 3. 启动 Simulator
+## 3. Start Simulator
 
 ```bash
 python simulator-service/main.py
 ```
 
-如果看到：
+If you see:
 ```
 [Simulator] 3D renderer initialized
 [Simulator] VLM client (Claude) initialized
 ```
-说明多模态功能已启用。
+Multimodal features are enabled.
 
-## 4. 查看 Vision 输出
+## 4. View Vision Output
 
-**订阅 vision 消息：**
+**Subscribe to vision messages:**
 ```bash
 mosquitto_sub -h localhost -p 1883 -t "vision/#" -v
 ```
 
-**或查看日志：**
+**Or check logs:**
 ```bash
 tail -f logs/vision.jsonl
 ```
 
-## 5. 工作原理
+## 5. How It Works
 
-1. Simulator 每5秒（可配置）渲染一次3D泵模型
-2. 根据传感器数据更新颜色（振动高→红色，温度高→橙色等）
-3. 截图保存为 PNG
-4. 调用 VLM API 分析图像
-5. VLM 返回文本描述（例如："泵体呈红色，表示振动异常"）
-6. 发布 vision 描述到 MQTT `vision/pump01`
+1. Simulator renders 3D pump model every 5 seconds (configurable)
+2. Colors update from sensor data (high vibration → red, high temp → orange, etc.)
+3. Screenshot saved as PNG
+4. VLM API analyzes image
+5. VLM returns text description (e.g. "Pump body is red, indicating vibration anomaly")
+6. Vision description published to MQTT `vision/pump01`
 
-## 配置选项
+## Config Options
 
-在 `.env` 中：
-- `VISION_FREQUENCY_SEC=5` - 每N秒生成一次vision（默认5秒）
-- `VLM_PROVIDER=claude` - 选择 VLM provider
+In `.env`:
+- `VISION_FREQUENCY_SEC=5` - Generate vision every N seconds (default 5)
+- `VLM_PROVIDER=claude` - VLM provider
 
-## 成本
+## Cost
 
-- Claude Vision: ~$0.003-0.015 每张图片
-- OpenAI GPT-4V: ~$0.01-0.03 每张图片
+- Claude Vision: ~$0.003-0.015 per image
+- OpenAI GPT-4V: ~$0.01-0.03 per image
 
-如果每5秒一次，每小时约720张图片。建议测试时设为30秒降低成本。
+At 5 seconds, ~720 images/hour. For testing, set to 30 seconds to reduce cost.

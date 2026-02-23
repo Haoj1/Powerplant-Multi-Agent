@@ -1,97 +1,96 @@
-# 微调 OpenAI API 用于「规则 + 传感器数据」分析的可行性与必要性
+# Feasibility and Necessity of Fine-tuning OpenAI API for "Rules + Sensor Data" Analysis
 
-## 1. 当前项目里规则与传感器数据怎么用
+## 1. How Rules and Sensor Data Are Used in This Project
 
-- **规则**：`agent-diagnosis/rules/` 下 5 个 Markdown 文件（bearing_wear、clogging、valve_stuck、sensor_drift、unknown），描述症状、根因、推荐动作、相关信号。Agent B 通过 **query_rules**（关键词/向量检索）拿到规则内容。
-- **传感器数据**：Agent A 用 **ThresholdDetector** 做阈值检测；Agent B 用 **query_telemetry** 查最近时序（pressure_bar、flow_m3h、vibration_rms、bearing_temp_c 等），再交给 LLM 做根因分析。
-- **LLM 角色**：诊断 Agent 使用 **ReAct + 工具**（query_rules / query_telemetry / query_alerts），系统提示里约定 root_cause 枚举、JSON 输出格式；当前用 **gpt-4o-mini 或 DeepSeek**，没有微调。
+- **Rules**: Five Markdown files in `agent-diagnosis/rules/` (bearing_wear, clogging, valve_stuck, sensor_drift, unknown) describing symptoms, root cause, recommended actions, and related signals. Agent B uses **query_rules** (keyword/vector retrieval) to fetch rule content.
+- **Sensor data**: Agent A uses **ThresholdDetector** for threshold detection; Agent B uses **query_telemetry** to fetch recent time series (pressure_bar, flow_m3h, vibration_rms, bearing_temp_c, etc.) and passes it to the LLM for root cause analysis.
+- **LLM role**: The diagnosis agent uses **ReAct + tools** (query_rules, query_telemetry, query_alerts) with a system prompt that defines root_cause enums and JSON output format; currently uses **gpt-4o-mini or DeepSeek** without fine-tuning.
 
-也就是说：**规则和传感器数据是在推理时通过 prompt + 工具注入的，模型本身没有针对「规则+传感器」做过专门训练。**
-
----
-
-## 2. 微调要解决什么问题（必要性）
-
-微调一个「专门分析规则和传感器数据」的模型，本质是：**让模型在相同输入下，更稳定、更符合你域内规则和信号语义地输出诊断结果。**
-
-| 维度 | 必要性高的情况 | 你当前情况 |
-|------|-----------------|------------|
-| **输出格式** | 经常出现 JSON 缺字段、多字段、枚举值错误 | 有 `_parse_final_answer` 兜底，但若经常解析失败就值得用微调固化格式 |
-| **根因与规则对齐** | 规则和信号名很多、组合复杂，基座模型常搞混 | 规则仅 5 类、信号名固定且已在 prompt 里列出，基座 + prompt 通常够用 |
-| **传感器模式理解** | 需要从时序里识别「趋势、多信号组合」等复杂模式 | 当前主要是「告警摘要 + 规则片段 + 若干条 telemetry 文本」，模式相对简单 |
-| **领域术语与枚举** | 强依赖你厂/产线的专有术语、故障代码 | 当前 root_cause 等已用枚举在 prompt 里约束 |
-| **延迟/成本** | 希望少依赖长 system prompt、少调工具轮次 | 若希望「一次调用就给出诊断」、减少 ReAct 步数，微调后可考虑简化流程 |
-| **标注数据** | 已有大量「告警+规则+传感器片段→正确诊断」的标注 | 目前没有看到现成的诊断标注集；可来自人工审核（Agent D 的 approve/reject）或历史工单 |
-
-**结论（必要性）：**
-
-- **短期**：规则少、信号集固定、已有 RAG + 工具 + 明确 prompt 时，**先做强 prompt + 检索与评估**，多数场景下不必立刻微调。
-- **值得考虑微调**的情况：  
-  - 线上诊断经常出现 root_cause 枚举用错、evidence 与规则对不齐；或  
-  - 你希望收敛到「单次调用、少工具」的轻量诊断接口；或  
-  - 你已积累或能持续产生 **高质量 (alert, rules_snippet, telemetry_snippet) → (root_cause, actions, evidence)** 的标注数据，且希望把这类能力固化到模型里。
+In other words: **rules and sensor data are injected at inference time via prompt + tools; the model itself has not been trained specifically on "rules + sensors."**
 
 ---
 
-## 3. 技术上可不可做（可行性）
+## 2. What Fine-tuning Would Solve (Necessity)
 
-### 3.1 OpenAI 侧能力
+Fine-tuning a model "specialized in rules and sensor data" would make it **more stable and better aligned with your domain's rules and signal semantics** for the same inputs.
 
-- **支持微调的模型**：包括 `gpt-4o-mini` 等，可用 OpenAI Fine-tuning API。
-- **数据格式**：JSONL，每条为 chat 的 `messages`（含 system / user / assistant）。
-- **数据量**：官方示例里「几十条」就能有效果；你这种「规则+传感器→结构化诊断」建议至少 **几百条** 高质量样本，复杂组合或长时序摘要则更多。
-- **单条长度**：单条样本有 token 上限（例如 4k），规则片段 + 传感器摘要需要控制在一段合理长度内。
+| Dimension | High necessity | Your current situation |
+|-----------|----------------|------------------------|
+| **Output format** | Frequent JSON missing fields, wrong enums | `_parse_final_answer` provides fallback; fine-tuning helps if parsing often fails |
+| **Root cause vs rules** | Many rules/signals, base model confuses them | Only 5 rule types, fixed signal names in prompt; base + prompt usually sufficient |
+| **Sensor pattern understanding** | Need to detect trends, multi-signal patterns | Mainly "alert summary + rule snippet + telemetry text"; patterns relatively simple |
+| **Domain terms** | Heavy use of plant-specific terms, fault codes | root_cause already constrained by enums in prompt |
+| **Latency/cost** | Want shorter prompts, fewer tool calls | Fine-tuning can enable single-call diagnosis with fewer ReAct steps |
+| **Labeled data** | Large labeled set of (alert + rules + sensors) → diagnosis | No ready dataset; can come from Agent D approve/reject or historical tickets |
 
-和你场景的匹配度：  
-- 输入 = 告警摘要 + 检索到的规则片段 + 一段 telemetry 文本；  
-- 输出 = 固定 JSON（root_cause, confidence, impact, recommended_actions, evidence）。  
-这种「输入文本 + 输出结构化」非常适合用 **监督微调** 做。
+**Conclusion (necessity):**
 
-### 3.2 训练数据从哪来
-
-| 来源 | 可行性 | 说明 |
-|------|--------|------|
-| **Agent D 审核结果** | 高 | 人工 approve 时相当于认可了当前诊断；可从 DB 取 (alert, diagnosis_id) → 取诊断报告作为「正确输出」，反查当时的 rules/telemetry 构造输入。需过滤掉被 reject 或改动的案例。 |
-| **历史诊断 + 人工抽检** | 中 | 现有诊断报告若经抽检/运维确认，可作弱标注；最好只选高置信度或人工修正过的。 |
-| **仿真 + 已知根因** | 高 | 仿真器已知注入的 fault 类型，可批量生成 (alert, rules, telemetry) → (root_cause, ...)，作为合成训练数据；注意分布要尽量接近真实。 |
-| **纯合成** | 中 | 用当前模型或规则模板生成大量样本，再人工或规则校验；质量依赖校验强度。 |
-
-你项目里已有 **simulator-service** 和 fault 注入，最适合先做 **「仿真 + 已知 root_cause」** 的自动标注，再辅以 Agent D 的审核数据做真实分布。
-
-### 3.3 工程上的注意点
-
-- **规则/信号变更**：若以后新增规则或传感器，微调模型会「固化」旧版规则与信号名；要么 **定期用新规则/新样本重训**，要么保留「新规则走 RAG+prompt，旧逻辑走微调」的混合策略。
-- **与 ReAct 的关系**：  
-  - 方案 A：微调一个「只做最后一步」的模型：输入 = 已经工具拉齐的 (alert + rules + telemetry)，输出 = 最终 JSON；ReAct 只负责「调工具、拼上下文」。  
-  - 方案 B：微调一个「少步 ReAct」的模型，让模型更会选工具、更会解读规则与传感器。  
-  方案 A 数据更好构造、评估更直接，建议先做 A。
-- **成本**：训练按 token 计费；推理用微调模型与用基座模型价格在同一量级。先小规模（几百条）试跑再放大。
+- **Short term**: With few rules, fixed signal set, and RAG + tools + clear prompt, **improve prompt + retrieval + evaluation first**; fine-tuning is often not needed yet.
+- **Consider fine-tuning when**:
+  - Production diagnosis often has wrong root_cause enums or evidence misaligned with rules; or
+  - You want a lightweight "single call, few tools" diagnosis API; or
+  - You have or can produce **high-quality (alert, rules_snippet, telemetry_snippet) → (root_cause, actions, evidence)** labels and want to bake that into the model.
 
 ---
 
-## 4. 建议路线（结合你项目）
+## 3. Technical Feasibility
 
-1. **先做基线评估（不必微调）**  
-   - 用现有 ReAct + 工具，在 **仿真场景** 或 **一段时间内的真实告警** 上跑诊断。  
-   - 统计：root_cause 准确率、JSON 解析成功率、与审核结果的一致性。  
-   - 若基线已经不错，优先做 **prompt/检索/工具** 的迭代，而不是立刻微调。
+### 3.1 OpenAI Capabilities
 
-2. **若确实要微调**  
-   - **数据**：用仿真生成「(alert + rules + telemetry) → 标准 JSON」的 JSONL；再从 Agent D 的审核库里导出「审核通过且未改 root_cause」的样本加入训练。  
-   - **任务形态**：先做「单轮：输入=拼接好的上下文，输出=诊断 JSON」的微调（对应上面方案 A），与现有 ReAct 串联。  
-   - **评估**：留出一部分仿真 case 和人工标注 case，看 root_cause 准确率、evidence 与规则是否一致、JSON 是否可解析。
+- **Fine-tunable models**: Including `gpt-4o-mini`, via OpenAI Fine-tuning API.
+- **Data format**: JSONL, each line a chat `messages` (system / user / assistant).
+- **Data volume**: Official examples show effect with tens of samples; for "rules + sensors → structured diagnosis" you should aim for **hundreds** of high-quality samples.
+- **Length**: Each sample has a token limit (e.g. 4k); keep rule snippet + sensor summary within a reasonable length.
 
-3. **长期**  
-   - 若规则/传感器会频繁扩展，可把「微调模型」定位成「在固定规则集/信号集上的高性能版本」，新规则新信号仍用 RAG + 通用模型或新样本重训。
+Fit for your scenario:
+- Input = alert summary + retrieved rule snippet + telemetry text;
+- Output = fixed JSON (root_cause, confidence, impact, recommended_actions, evidence).
+
+This "text input + structured output" pattern is well suited for **supervised fine-tuning**.
+
+### 3.2 Where Training Data Comes From
+
+| Source | Feasibility | Notes |
+|--------|-------------|-------|
+| **Agent D approvals** | High | Human approve = acceptance of diagnosis; extract (alert, diagnosis_id) from DB, use diagnosis as "correct output", reconstruct rules/telemetry for input. Filter out rejected or edited cases. |
+| **Historical diagnosis + spot checks** | Medium | Use existing reports if spot-checked by ops; prefer high-confidence or human-corrected. |
+| **Simulation + known root cause** | High | Simulator knows injected fault type; batch-generate (alert, rules, telemetry) → (root_cause, ...) as synthetic data; keep distribution close to real. |
+| **Pure synthetic** | Medium | Generate with current model or rule templates, then validate; quality depends on validation. |
+
+Your project has **simulator-service** and fault injection; best approach is **"simulation + known root_cause"** for automatic labeling, supplemented by Agent D approval data for real distribution.
+
+### 3.3 Engineering Considerations
+
+- **Rule/signal changes**: Fine-tuned model will be tied to the rules/signals at training time; either **periodically retrain** with new rules/samples or use a hybrid (new rules via RAG+prompt, old logic via fine-tuned model).
+- **Relation to ReAct**:
+  - Option A: Fine-tune a "final step only" model: input = (alert + rules + telemetry) already assembled by tools; output = final JSON. ReAct only calls tools and assembles context.
+  - Option B: Fine-tune a "few-step ReAct" model that better chooses tools and interprets rules/sensors.
+  Option A is easier to build data for and evaluate; recommend starting with A.
+- **Cost**: Training billed by token; inference cost for fine-tuned model is similar to base. Start with a small dataset (hundreds of samples) for a POC.
 
 ---
 
-## 5. 简短结论
+## 4. Recommended Path (For This Project)
 
-| 问题 | 结论 |
-|------|------|
-| **有没有必要？** | 当前规则少、信号固定时**不是刚需**；若线上诊断质量不足、或希望少用工具/单次调用就出结果、或已有/能产高质量标注，则**有必要考虑**。 |
-| **可不可行？** | **可行**。OpenAI 支持 gpt-4o-mini 等微调；数据可从仿真（已知 root_cause）+ Agent D 审核数据构造；建议先做「上下文 → 诊断 JSON」的单步模型，再与现有 ReAct 工具链结合。 |
-| **下一步** | 先做基线评估与数据摸底（仿真 + 审核通过样本数量与质量），再决定是否上微调；若上，优先用仿真+审核数据建一个小规模 JSONL 数据集做 POC。 |
+1. **Baseline evaluation (no fine-tuning)**  
+   - Run existing ReAct + tools on **simulation scenarios** or **real alerts over a period**.  
+   - Measure: root_cause accuracy, JSON parse success rate, agreement with approval decisions.  
+   - If baseline is good, iterate on **prompt / retrieval / tools** before fine-tuning.
 
-如果你愿意，我可以再根据你现有的 `shared_lib`、`agent-diagnosis` 的表结构，写一个「从 DB/仿真导出 JSONL 训练样本」的脚本草稿或数据格式示例。
+2. **If fine-tuning is needed**  
+   - **Data**: Use simulation to generate "(alert + rules + telemetry) → standard JSON" JSONL; add samples from Agent D approvals where root_cause was not changed.  
+   - **Task**: Start with "single turn: input = assembled context, output = diagnosis JSON" (Option A above), integrated with existing ReAct.  
+   - **Evaluation**: Hold out some simulation cases and human-labeled cases; measure root_cause accuracy, evidence vs rules consistency, JSON parse success.
+
+3. **Long term**  
+   - If rules/sensors will expand often, treat the fine-tuned model as "high-performance version for a fixed rule/signal set"; new rules/signals stay on RAG + general model or require new training data.
+
+---
+
+## 5. Summary
+
+| Question | Answer |
+|----------|--------|
+| **Necessary?** | With few rules and fixed signals, **not urgent**; consider if diagnosis quality is poor, or you want fewer tools/single-call output, or you have/can produce high-quality labels. |
+| **Feasible?** | **Yes**. OpenAI supports fine-tuning gpt-4o-mini; data can come from simulation (known root_cause) + Agent D approvals; recommend "context → diagnosis JSON" single-step model first, then integrate with ReAct tools. |
+| **Next steps** | Run baseline evaluation and data audit (simulation + approved sample count and quality); then decide on fine-tuning. If yes, build a small JSONL dataset from simulation + approvals for a POC. |

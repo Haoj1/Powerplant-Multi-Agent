@@ -1,28 +1,28 @@
-# Simulator 多资产 API 文档
+# Simulator Multi-Asset API Documentation
 
-## 概述
+## Overview
 
-Simulator 现在支持**同时运行多个资产（机器）**的 scenario，每个资产独立运行。还支持**手动触发告警**用于测试。
+The Simulator now supports **running multiple assets (machines) simultaneously**, each running independently. It also supports **manual alert triggering** for testing.
 
 ---
 
-## 多资产支持
+## Multi-Asset Support
 
-### 架构变更
+### Architecture Change
 
-- **之前**：单个 `executor`，只能运行一个 scenario
-- **现在**：`executors` 字典（`asset_id -> executor`），可同时运行多个 scenario
+- **Before**: Single `executor`, only one scenario at a time
+- **Now**: `executors` dict (`asset_id -> executor`), can run multiple scenarios in parallel
 
-### Scenario JSON 格式
+### Scenario JSON Format
 
-所有 scenario JSON 文件现在需要包含 `plant_id` 和 `asset_id`：
+All scenario JSON files must include `plant_id` and `asset_id`:
 
 ```json
 {
   "version": "1.0",
   "name": "healthy_baseline",
   "plant_id": "plant01",
-  "asset_id": "pump01",  // 必需：资产 ID
+  "asset_id": "pump01",  // Required: asset ID
   "description": "...",
   "seed": 12345,
   "duration_sec": 600,
@@ -30,278 +30,120 @@ Simulator 现在支持**同时运行多个资产（机器）**的 scenario，每
 }
 ```
 
-如果未指定，默认使用 `plant01` 和 `pump01`。
+If not specified, defaults to `plant01` and `pump01`.
 
 ---
 
-## API 端点
+## API Endpoints
 
-### 1. 加载 Scenario
+### 1. Load Scenario
 
 **`POST /scenario/load`**
 
-加载 scenario 到指定资产（asset_id 从 scenario JSON 中读取）。
+Load scenario for the specified asset (asset_id read from scenario JSON).
 
-**Request Body:**
-```json
-{
-  "scenario": {
-    "version": "1.0",
-    "name": "healthy_baseline",
-    "plant_id": "plant01",
-    "asset_id": "pump01",
-    "description": "...",
-    "seed": 12345,
-    "duration_sec": 600,
-    "initial_conditions": {...},
-    "faults": [...],
-    "setpoints": [...]
-  }
-}
-```
+**Request Body:** See spec.
 
-**Response:**
-```json
-{
-  "status": "loaded",
-  "asset_id": "pump01",
-  "plant_id": "plant01",
-  "scenario_name": "healthy_baseline",
-  "duration_sec": 600
-}
-```
-
-**注意**：如果该 asset_id 已有运行的 scenario，会自动停止。
+**Note**: If that asset_id already has a running scenario, it will be stopped automatically.
 
 ---
 
-### 2. 启动 Scenario（特定资产）
+### 2. Start Scenario (per asset)
 
 **`POST /scenario/start/{asset_id}`**
 
-启动指定资产的 scenario。
-
-**Example:**
-```bash
-POST /scenario/start/pump01
-POST /scenario/start/pump02
-```
-
-**Response:**
-```json
-{
-  "status": "started",
-  "asset_id": "pump01"
-}
-```
+Start the scenario for the specified asset.
 
 ---
 
-### 3. 停止 Scenario（特定资产）
+### 3. Stop Scenario (per asset)
 
 **`POST /scenario/stop/{asset_id}`**
 
-停止指定资产的 scenario。
-
-**Example:**
-```bash
-POST /scenario/stop/pump01
-```
-
-**Response:**
-```json
-{
-  "status": "stopped",
-  "asset_id": "pump01"
-}
-```
+Stop the scenario for the specified asset.
 
 ---
 
-### 4. 停止所有 Scenario
+### 4. Stop All Scenarios
 
 **`POST /scenario/stop`**
 
-停止所有正在运行的 scenario。
-
-**Response:**
-```json
-{
-  "status": "stopped",
-  "stopped_assets": ["pump01", "pump02"]
-}
-```
+Stop all running scenarios.
 
 ---
 
-### 5. 重置 Scenario（特定资产）
+### 5. Reset Scenario (per asset)
 
 **`POST /scenario/reset/{asset_id}`**
 
-重置指定资产的 scenario 到开始状态。
-
-**Response:**
-```json
-{
-  "status": "reset",
-  "asset_id": "pump01"
-}
-```
+Reset the scenario to its initial state.
 
 ---
 
-### 6. 查询状态
+### 6. Query Status
 
-**`GET /status`** - 查询所有资产状态
+**`GET /status`** - All assets
 
-**`GET /status?asset_id=pump01`** - 查询特定资产状态
-
-**Response (所有资产):**
-```json
-{
-  "assets": [
-    {
-      "asset_id": "pump01",
-      "scenario_name": "healthy_baseline",
-      "running": true,
-      "current_time": 123.45,
-      "duration_sec": 600,
-      ...
-    },
-    {
-      "asset_id": "pump02",
-      "scenario_name": "bearing_wear_chronic",
-      "running": true,
-      "current_time": 456.78,
-      "duration_sec": 3600,
-      ...
-    }
-  ],
-  "total_assets": 2
-}
-```
-
-**Response (单个资产):**
-```json
-{
-  "asset_id": "pump01",
-  "scenario_name": "healthy_baseline",
-  "running": true,
-  "current_time": 123.45,
-  "duration_sec": 600,
-  ...
-}
-```
+**`GET /status?asset_id=pump01`** - Single asset
 
 ---
 
-### 7. 列出所有 Scenario
+### 7. List All Scenarios
 
 **`GET /scenarios`**
 
-列出所有已加载的 scenario。
-
-**Response:**
-```json
-{
-  "scenarios": [
-    {
-      "asset_id": "pump01",
-      "scenario_name": "healthy_baseline",
-      "running": true,
-      "current_time": 123.45,
-      "duration_sec": 600
-    },
-    {
-      "asset_id": "pump02",
-      "scenario_name": "bearing_wear_chronic",
-      "running": false,
-      "current_time": 0.0,
-      "duration_sec": 3600
-    }
-  ],
-  "total": 2
-}
-```
+List all loaded scenarios.
 
 ---
 
-### 8. 手动触发告警（测试用）
+### 8. Manual Alert Trigger (testing)
 
 **`POST /alert/trigger`**
 
-手动触发一个告警，发布到 MQTT 供 Agent A 处理。
+Manually trigger an alert, published to MQTT for Agent A to process.
 
-**Request Body:**
-```json
-{
-  "asset_id": "pump01",
-  "plant_id": "plant01",
-  "signal": "vibration_rms",
-  "severity": "warning",  // 或 "critical"
-  "score": 3.5,
-  "method": "manual",
-  "evidence": {
-    "manual_trigger": true,
-    "test_purpose": "testing alert flow"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "status": "triggered",
-  "asset_id": "pump01",
-  "signal": "vibration_rms",
-  "severity": "warning",
-  "mqtt_topic": "alerts/pump01"
-}
-```
-
-**用途**：
-- 测试告警流程（Agent A → Agent B → Agent C → Agent D）
-- 验证前端告警展示
-- 测试 RAG 查询相似告警
+**Use cases:**
+- Test alert flow (Agent A → Agent B → Agent C → Agent D)
+- Verify frontend alert display
+- Test RAG similar-alert queries
 
 ---
 
-## 使用示例
+## Usage Examples
 
-### 示例 1：同时运行两个资产
+### Example 1: Run Two Assets Simultaneously
 
 ```python
 import requests
 
 BASE_URL = "http://localhost:8001"
 
-# 加载 pump01 的 scenario
+# Load pump01 scenario
 with open("scenarios/healthy_baseline.json") as f:
     scenario1 = json.load(f)
     scenario1["asset_id"] = "pump01"
 
 requests.post(f"{BASE_URL}/scenario/load", json={"scenario": scenario1})
 
-# 加载 pump02 的 scenario
+# Load pump02 scenario
 with open("scenarios/bearing_wear_chronic.json") as f:
     scenario2 = json.load(f)
     scenario2["asset_id"] = "pump02"
 
 requests.post(f"{BASE_URL}/scenario/load", json={"scenario": scenario2})
 
-# 同时启动两个
+# Start both
 requests.post(f"{BASE_URL}/scenario/start/pump01")
 requests.post(f"{BASE_URL}/scenario/start/pump02")
 
-# 查看状态
+# Check status
 status = requests.get(f"{BASE_URL}/status").json()
 print(f"Running assets: {[a['asset_id'] for a in status['assets'] if a['running']]}")
 ```
 
-### 示例 2：手动触发告警测试
+### Example 2: Manual Alert Trigger Test
 
 ```python
-# 触发一个告警
 alert = {
     "asset_id": "pump01",
     "signal": "vibration_rms",
@@ -312,70 +154,54 @@ alert = {
 }
 
 response = requests.post(f"{BASE_URL}/alert/trigger", json=alert)
-print(response.json())
-# 告警会发布到 MQTT topic: alerts/pump01
-# Agent A 会处理并转发给 Agent B
+# Alert is published to MQTT topic: alerts/pump01
+# Agent A processes and forwards to Agent B
 ```
 
 ---
 
-## Agent D 前端集成建议
+## Agent D Frontend Integration
 
-### Scenario 管理页面
+### Scenario Management Page
 
-1. **Scenario 列表**
-   - 显示所有已加载的 scenario（`GET /scenarios`）
-   - 每个 scenario 显示：asset_id、名称、运行状态、当前时间
-
-2. **加载 Scenario**
-   - 表单：选择 scenario JSON 文件或手动输入
-   - 可编辑 `asset_id`（默认从 JSON 读取）
-   - 调用 `POST /scenario/load`
-
-3. **控制按钮**
-   - Start / Stop / Reset 按钮（每个 asset 独立）
-   - 调用 `POST /scenario/start/{asset_id}` 等
-
-4. **手动触发告警**
-   - 表单：asset_id、signal、severity、score
-   - 调用 `POST /alert/trigger`
-   - 用于快速测试告警流程
+1. **Scenario list**: Show all loaded scenarios (`GET /scenarios`), asset_id, name, status, current time
+2. **Load scenario**: Form for JSON file or manual input; editable `asset_id`; call `POST /scenario/load`
+3. **Control buttons**: Start / Stop / Reset per asset; call `POST /scenario/start/{asset_id}` etc.
+4. **Manual alert trigger**: Form (asset_id, signal, severity, score); call `POST /alert/trigger`
 
 ---
 
-## 注意事项
+## Notes
 
-1. **线程安全**：使用 `_executors_lock` 保护 `executors` 字典
-2. **资源清理**：停止 scenario 时会清理线程
-3. **MQTT Topic**：每个资产发布到 `telemetry/{asset_id}` 和 `alerts/{asset_id}`
-4. **数据库**：所有资产的 telemetry 都写入同一个数据库（按 `asset_id` 区分）
+1. **Thread safety**: `_executors_lock` protects `executors` dict
+2. **Resource cleanup**: Threads cleaned on scenario stop
+3. **MQTT topics**: Each asset publishes to `telemetry/{asset_id}` and `alerts/{asset_id}`
+4. **Database**: All telemetry in same DB, distinguished by `asset_id`
 
 ---
 
-## 迁移指南
+## Migration Guide
 
-### 旧代码（单资产）
+### Old (single asset)
 
 ```python
-# 旧代码
 requests.post("/scenario/load", json={"scenario": scenario})
 requests.post("/scenario/start")
 ```
 
-### 新代码（多资产）
+### New (multi-asset)
 
 ```python
-# 新代码
-scenario["asset_id"] = "pump01"  # 添加 asset_id
+scenario["asset_id"] = "pump01"
 requests.post("/scenario/load", json={"scenario": scenario})
-requests.post("/scenario/start/pump01")  # 指定 asset_id
+requests.post("/scenario/start/pump01")
 ```
 
 ---
 
-## 总结
+## Summary
 
-✅ **多资产支持** - 可同时运行多个 scenario  
-✅ **手动触发告警** - 方便测试  
-✅ **向后兼容** - 默认 asset_id="pump01"  
-✅ **线程安全** - 使用锁保护共享状态
+✅ **Multi-asset** - Run multiple scenarios in parallel  
+✅ **Manual alert trigger** - Easy testing  
+✅ **Backward compatible** - Default asset_id="pump01"  
+✅ **Thread safe** - Lock protects shared state
