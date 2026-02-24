@@ -41,6 +41,7 @@ ENV/
 .env
 .env.example
 .env.local
+.env.production
 .env.*.local
 *.pem
 
@@ -56,6 +57,7 @@ ENV/
 
 # Logs & runtime
 logs/
+.pids/
 *.log
 *.jsonl
 
