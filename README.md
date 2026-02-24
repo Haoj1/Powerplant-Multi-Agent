@@ -2,13 +2,68 @@
 
 A multi-agent system for real-time monitoring, anomaly detection, root cause analysis, and automated ticket creation for powerplant assets.
 
+**Live Demo:** [https://app.powerplantagent.com/review](https://app.powerplantagent.com/review)
+
+---
+
+## Project Overview
+
+This project implements an end-to-end pipeline for industrial IoT asset monitoring. It simulates a powerplant subsystem (pump, piping, bearing) with configurable fault injection, detects anomalies in real-time sensor streams, diagnoses root causes using rules and LLM (ReAct), creates tickets automatically, and provides a human-in-the-loop review interface. The system combines MQTT pub/sub, multi-agent coordination, RAG-based retrieval, and optional Salesforce integration.
+
+### Problems Solved
+
+- **Real-time anomaly detection** from streaming telemetry (pressure, flow, temperature, vibration, etc.)
+- **Interpretable root cause analysis** (RCA) with evidence and rules, not black-box predictions
+- **Automated ticket creation** with recommended actions and evidence
+- **Human-in-the-loop review** for safety and accountability before ticket closure
+- **Reproducible evaluation** via fault injection and scenario-driven testing
+
+### Technology Stack
+
+- **Backend:** Python 3.11, FastAPI, pydantic
+- **Message bus:** MQTT (Mosquitto)
+- **LLM:** LangChain, LangGraph, OpenAI/DeepSeek
+- **Frontend:** React, Vite
+- **RAG:** sqlite-vec, sentence-transformers
+
+---
+
 ## Architecture
 
-- **Simulator Service**: Generates telemetry data and publishes to MQTT
-- **Agent Monitor (Agent A)**: Subscribes to telemetry, detects anomalies, publishes alerts
-- **Agent Diagnosis (Agent B)**: Subscribes to alerts, performs root cause analysis, publishes diagnoses
-- **Agent Ticket (Agent C)**: Subscribes to diagnoses, creates tickets (GitHub Issues or local)
-- **Agent Review (Agent D)**: Provides human review interface, feedback loop, and Salesforce integration
+| Component | Role |
+|-----------|------|
+| **Simulator** | Generates telemetry, injects faults (bearing_wear, clogging, valve_stuck, sensor_drift), publishes to MQTT |
+| **Agent A (Monitor)** | Subscribes to telemetry, sliding-window anomaly detection (Z-score), publishes alerts |
+| **Agent B (Diagnosis)** | Subscribes to alerts, rule-based + LLM (ReAct) root cause analysis, publishes diagnoses |
+| **Agent C (Ticket)** | Subscribes to diagnoses, creates tickets (GitHub Issues or local), queues for review |
+| **Agent D (Review)** | Human review interface, approve/reject/edit, optional Salesforce Case, chat assistant with RAG |
+
+All agents communicate via **MQTT** (pub/sub). Each agent is stateless and scalable.
+
+---
+
+## Data Flow
+
+```
+┌─────────────┐     telemetry/*      ┌─────────────┐     alerts/*      ┌─────────────┐
+│  Simulator  │ ──────────────────► │  Agent A    │ ───────────────► │  Agent B    │
+│  (8001)     │                      │  (Monitor)  │                  │ (Diagnosis) │
+└─────────────┘                      └─────────────┘                  └──────┬──────┘
+                                                                             │
+                                                                      diagnosis/*
+                                                                             │
+                                                                             ▼
+┌─────────────┐     tickets/*        ┌─────────────┐     feedback/*   ┌─────────────┐
+│  Agent D    │ ◄────────────────── │  Agent C    │ ◄────────────────│  Human      │
+│  (Review)   │                      │  (Ticket)   │                  │  Reviewer   │
+└─────────────┘                      └─────────────┘                  └─────────────┘
+       │
+       │  API + Frontend (8005)
+       ▼
+  Web Dashboard (Review Queue, Alerts, Sensors, Chat, Scenarios)
+```
+
+**Flow summary:** Telemetry → Alerts → Diagnosis → Ticket → Human Review → Feedback. Each step adds structure and context. Feedback can update rules and thresholds.
 
 ## Project Structure
 
@@ -78,7 +133,9 @@ A multi-agent system for real-time monitoring, anomaly detection, root cause ana
 
 ## Features
 
-### Agent D Dashboard (port 3000)
+### Agent D Dashboard
+
+Live demo: [https://app.powerplantagent.com/review](https://app.powerplantagent.com/review) (local dev: port 3000)
 
 - **Review Queue**: Approve/reject diagnoses; optionally create Salesforce Case with pre-filled form
 - **Alerts**: View alerts, generate/regenerate diagnosis, save, add to Review Queue
