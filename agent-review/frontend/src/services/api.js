@@ -1,10 +1,13 @@
 /**
  * API service for Agent D backend (port 8005)
+ * Production: VITE_API_BASE_URL=https://api.powerplantagent.com (no trailing slash)
+ * Dev: uses Vite proxy /api -> localhost:8005
  */
-
 import axios from 'axios'
 
-const API_BASE_URL = '/api'  // Proxy to http://localhost:8005
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')}/api`
+  : '/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -162,7 +165,7 @@ export const deleteChatSession = async (sessionId) => {
  * Returns the session_id from the result event (or null).
  */
 export async function chatAskStream(question, sessionId, conversationHistory, onEvent, options = {}) {
-  const url = '/api/chat/ask'
+  const url = `${API_BASE_URL}/chat/ask`
   const body = {
     question,
     session_id: sessionId || null,

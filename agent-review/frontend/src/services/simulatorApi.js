@@ -1,10 +1,13 @@
 /**
- * API service for Simulator (port 8001, proxied via /simulator in dev)
+ * API service for Simulator (port 8001)
+ * Production: VITE_API_BASE_URL=https://api.powerplantagent.com
+ * Dev: Vite proxy /simulator -> localhost:8001
  */
-
 import axios from 'axios'
 
-const SIMULATOR_BASE_URL = '/simulator'
+const SIMULATOR_BASE_URL = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')}/simulator`
+  : '/simulator'
 
 const simulatorApi = axios.create({
   baseURL: SIMULATOR_BASE_URL,
