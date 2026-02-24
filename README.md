@@ -149,6 +149,86 @@ Live demo: [https://app.powerplantagent.com/review](https://app.powerplantagent.
 
 When approving a review, you can create a Salesforce Case with Subject, Description, Priority, Status, Origin, Type, and Reason. Picklist values are fetched from your Salesforce org. See `docs/EXTERNAL_API_CONFIG.md` for setup.
 
+---
+
+## How to Use the App
+
+The dashboard has five main sections. Here is a step-by-step guide.
+
+### 1. Scenarios – Run a Fault Simulation
+
+Before you see alerts and diagnoses, you need to run a scenario that injects faults into the simulator.
+
+1. Go to **Scenarios** in the sidebar.
+2. Click **Load Scenario**.
+3. Choose a scenario JSON (e.g. `test_alert_quick.json` for a quick fault, or `bearing_wear_chronic.json` for gradual bearing wear).
+4. Set **Asset ID** (e.g. `pump01`) and **Plant ID** (e.g. `plant01`).
+5. Click **Load**, then **Start**.
+6. The simulator will publish telemetry; Agent A will detect anomalies and Agent B will produce diagnoses. New items will appear in **Review Queue** and **Alerts**.
+
+**Troubleshooting Rules:** In the same page, you can create rules from natural language or by uploading a flowchart image. Rules are used by Agent B for root cause analysis.
+
+---
+
+### 2. Review Queue – Approve or Reject Diagnoses
+
+Pending diagnoses from Agent B appear here for human review.
+
+1. Go to **Review Queue**.
+2. Use filters (Status, Asset ID) to find items.
+3. Click a row or **View** to open the diagnosis modal (root cause, confidence, evidence, recommended actions).
+4. **Approve** – Optionally add notes and check "Create Salesforce Case" to push a Case to Salesforce. The diagnosis is marked approved.
+5. **Reject** – Add notes and reject. The diagnosis is marked rejected.
+
+---
+
+### 3. Alerts – View and Trigger Diagnosis
+
+Shows all alerts from Agent A (anomaly detection).
+
+1. Go to **Alerts**.
+2. Browse alerts by asset, severity, time.
+3. Click an alert to see details.
+4. Use **Generate Diagnosis** to have Agent B analyze the alert and produce a diagnosis.
+5. Use **Add to Review Queue** to send the diagnosis to the Review Queue for approval.
+
+---
+
+### 4. Sensors – Real-Time Telemetry
+
+View live sensor values for an asset.
+
+1. Go to **Sensors**.
+2. Select an **Asset** (e.g. `pump01`).
+3. The dashboard shows pressure, flow, temperature, vibration, etc., with auto-refresh.
+4. Use this to monitor asset state while a scenario is running.
+
+---
+
+### 5. Chat – ReAct Assistant with RAG
+
+A chat assistant that can query diagnoses, alerts, rules, and feedback.
+
+1. Go to **Chat**.
+2. Type a question, e.g.:
+   - "Find similar bearing wear cases"
+   - "What rules apply to vibration?"
+   - "Show pending diagnoses for pump01"
+3. The assistant uses RAG tools (query_similar_diagnoses, query_similar_rules, etc.) and returns answers with references.
+4. ReAct steps (thought, tool call, result) are shown for transparency.
+
+---
+
+### Typical Workflow
+
+1. **Load and start a scenario** (Scenarios) → Simulator injects fault.
+2. **Watch Sensors** (Sensors) → See telemetry change.
+3. **Check Alerts** (Alerts) → Agent A detects anomalies.
+4. **Review Queue** (Review Queue) → Agent B diagnoses; you approve or reject.
+5. **Chat** (Chat) → Ask questions about similar cases or rules.
+
+---
+
 ## Development Status
 
 - ✅ Phase 0: Project skeleton and shared library
