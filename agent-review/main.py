@@ -22,9 +22,9 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel
-from fastapi import Body, File, FastAPI, HTTPException, UploadFile
+from fastapi import Body, File, FastAPI, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 
 
 class ChatAskRequest(BaseModel):
@@ -731,6 +731,51 @@ async def reject_review(review_id: int, body: Optional[RejectBody] = Body(None))
 @app.get("/health")
 async def health():
     return {"status": "healthy", "service": "agent-review"}
+
+
+# --- Production: Simulator proxy + static frontend ---
+
+SIMULATOR_URL = "http://127.0.0.1:8001"
+_FRONTEND_DIST = _project_root / "agent-review" / "frontend" / "dist"
+
+
+async def _proxy_to_simulator(request: Request, path: str):
+    import httpx
+    base = SIMULATOR_URL.rstrip("/")
+    url = f"{base}/{path}" if path else f"{base}/"
+    if request.url.query:
+        url += f"?{request.url.query}"
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        body = await request.body()
+        r = await client.request(request.method, url, content=body, headers={k: v for k, v in request.headers.items() if k.lower() not in ("host", "content-length")})
+    return Response(content=r.content, status_code=r.status_code, headers={k: v for k, v in r.headers.items() if k.lower() not in ("transfer-encoding", "content-encoding")})
+
+
+@app.api_route("/simulator", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_simulator_root(request: Request):
+    return await _proxy_to_simulator(request, "")
+
+
+@app.api_route("/simulator/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_simulator_path(request: Request, path: str):
+    return await _proxy_to_simulator(request, path)
+
+
+if _FRONTEND_DIST.exists() and (_FRONTEND_DIST / "index.html").exists():
+    from fastapi.staticfiles import StaticFiles
+    _assets = _FRONTEND_DIST / "assets"
+    if _assets.exists():
+        app.mount("/assets", StaticFiles(directory=str(_assets)), name="static-assets")
+
+    @app.get("/")
+    async def serve_index():
+        return FileResponse(_FRONTEND_DIST / "index.html")
+
+    @app.get("/{path:path}")
+    async def serve_spa(path: str):
+        if path.startswith("api") or path.startswith("simulator") or path.startswith("assets") or path.startswith("health"):
+            raise HTTPException(404)
+        return FileResponse(_FRONTEND_DIST / "index.html")
 
 
 if __name__ == "__main__":
