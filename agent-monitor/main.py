@@ -31,7 +31,7 @@ except ImportError:
     index_alert = None
 
 from mqtt import MQTTSubscriber, AlertPublisher
-from detection import ThresholdDetector
+from detection import ThresholdDetector, TelemetryBuffer
 
 
 app = FastAPI(
@@ -52,12 +52,13 @@ _stats_lock = threading.Lock()
 # Components (initialized on startup)
 subscriber: MQTTSubscriber = None
 detector: ThresholdDetector = None
+buffer: TelemetryBuffer = None
 alert_publisher: AlertPublisher = None
 
 
 def on_telemetry(topic: str, payload: dict):
     """Handle incoming telemetry: validate, detect, publish alert if needed."""
-    global stats, detector, alert_publisher
+    global stats, detector, buffer, alert_publisher
     try:
         telemetry = Telemetry.model_validate(payload)
     except ValidationError as e:
@@ -68,6 +69,10 @@ def on_telemetry(topic: str, payload: dict):
         stats["messages_processed"] += 1
         stats["assets_monitored"].add(telemetry.asset_id)
 
+    # Push to sliding window buffer for trend/duration detection
+    if buffer:
+        buffer.push(telemetry)
+
     # Debug: print first few telemetry values to see what we're getting
     if stats["messages_processed"] <= 3:
         print(f"[Agent A] Received telemetry #{stats['messages_processed']}: "
@@ -75,7 +80,7 @@ def on_telemetry(topic: str, payload: dict):
               f"current={telemetry.signals.motor_current_a:.2f} A, "
               f"vibration={telemetry.signals.vibration_rms:.2f} mm/s")
     
-    alert = detector.detect(telemetry) if detector else None
+    alert = detector.detect(telemetry, buffer) if detector else None
     if alert:
         print(f"[Agent A] Alert generated: {alert.severity} - {len(alert.alerts)} signal(s)")
     
@@ -113,8 +118,9 @@ def on_telemetry(topic: str, payload: dict):
 
 @app.on_event("startup")
 async def startup_event():
-    global subscriber, detector, alert_publisher
-    detector = ThresholdDetector()
+    global subscriber, detector, buffer, alert_publisher
+    buffer = TelemetryBuffer(window_sec=120, max_points_per_asset=200)
+    detector = ThresholdDetector(min_duration_sec=5, window_sec=60)
     telemetry_topic = f"{settings.mqtt_topic_telemetry}/#"
     subscriber = MQTTSubscriber(
         host=settings.mqtt_host,

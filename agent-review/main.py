@@ -349,6 +349,31 @@ async def chat_ask(request: ChatAskRequest):
     )
 
 
+# --- Alert Detection Rules (Agent A) ---
+
+ALERT_RULES = [
+    {"signal": "vibration_rms", "type": "threshold", "warning": 7.1, "critical": 18.0, "unit": "mm/s"},
+    {"signal": "bearing_temp_c", "type": "threshold", "warning": 70, "critical": 85, "unit": "°C"},
+    {"signal": "pressure_bar", "type": "threshold_high", "warning": 18, "critical": 25, "unit": "bar"},
+    {"signal": "motor_current_a", "type": "threshold_high", "warning": 38, "critical": 45, "unit": "A"},
+    {"signal": "temp_c", "type": "threshold_high", "warning": 80, "critical": 95, "unit": "°C"},
+    {"signal": "flow_m3h", "type": "threshold_low", "warning": 80, "critical": 50, "unit": "m³/h"},
+    {"signal": "rpm", "type": "range", "min": 1400, "max": 1600, "unit": "rpm"},
+    {"signal": "valve_flow_mismatch", "type": "combination", "desc": "valve > 80% but flow < 50 m³/h for > 20s"},
+    {"signal": "vibration_rms", "type": "slope", "warning": 0.03, "critical": 0.08, "unit": "/s"},
+    {"signal": "bearing_temp_c", "type": "slope", "warning": 0.1, "critical": 0.3, "unit": "°C/s"},
+    {"signal": "flow_m3h", "type": "slope_drop", "warning": -2, "critical": -5, "unit": "m³/h/s"},
+    {"signal": "pressure_bar", "type": "slope", "warning": 0.5, "critical": 1.0, "unit": "bar/s"},
+    {"signal": "motor_current_a", "type": "slope", "warning": 0.3, "critical": 0.8, "unit": "A/s"},
+]
+
+
+@app.get("/api/alert-rules")
+async def get_alert_rules():
+    """List Agent A alert detection rules (thresholds, slopes, combinations)."""
+    return {"success": True, "rules": ALERT_RULES}
+
+
 # --- Troubleshooting Rules (Scenario Management) ---
 
 class CreateRuleFromTextBody(BaseModel):
