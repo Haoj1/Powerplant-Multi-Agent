@@ -1,21 +1,24 @@
 import { useState, useEffect } from 'react'
 import { getScenarios, loadScenario, startScenario, stopScenario, resetScenario, triggerAlert } from '../services/simulatorApi'
-import { getRules, deleteRule } from '../services/api'
+import { getRules, deleteRule, getAlertRules } from '../services/api'
 import ScenarioListTable from '../components/scenarios/ScenarioListTable'
 import LoadScenarioModal from '../components/scenarios/LoadScenarioModal'
 import TriggerAlertModal from '../components/scenarios/TriggerAlertModal'
 import CreateRuleModal from '../components/scenarios/CreateRuleModal'
 import ViewRuleModal from '../components/scenarios/ViewRuleModal'
 import RulesListTable from '../components/scenarios/RulesListTable'
+import AlertRulesTable from '../components/scenarios/AlertRulesTable'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import './ScenariosPage.css'
 
 function ScenariosPage() {
-  const [activeTab, setActiveTab] = useState('scenarios') // 'scenarios' | 'rules'
+  const [activeTab, setActiveTab] = useState('scenarios') // 'scenarios' | 'rules' | 'alertRules'
   const [scenarios, setScenarios] = useState([])
   const [rules, setRules] = useState([])
+  const [alertRules, setAlertRules] = useState([])
   const [loading, setLoading] = useState(true)
   const [rulesLoading, setRulesLoading] = useState(false)
+  const [alertRulesLoading, setAlertRulesLoading] = useState(false)
   const [showLoadModal, setShowLoadModal] = useState(false)
   const [showTriggerModal, setShowTriggerModal] = useState(false)
   const [showCreateRuleModal, setShowCreateRuleModal] = useState(false)
@@ -29,6 +32,7 @@ function ScenariosPage() {
 
   useEffect(() => {
     if (activeTab === 'rules') loadRules()
+    if (activeTab === 'alertRules') loadAlertRules()
   }, [activeTab])
 
   const loadScenarios = async () => {
@@ -52,6 +56,19 @@ function ScenariosPage() {
       setRules([])
     } finally {
       setRulesLoading(false)
+    }
+  }
+
+  const loadAlertRules = async () => {
+    setAlertRulesLoading(true)
+    try {
+      const data = await getAlertRules()
+      setAlertRules(data || [])
+    } catch (error) {
+      console.error('Failed to load alert rules:', error)
+      setAlertRules([])
+    } finally {
+      setAlertRulesLoading(false)
     }
   }
 
@@ -136,6 +153,13 @@ function ScenariosPage() {
           >
             Troubleshooting Rules
           </button>
+          <button
+            type="button"
+            className={activeTab === 'alertRules' ? 'active' : ''}
+            onClick={() => setActiveTab('alertRules')}
+          >
+            Alert Rules
+          </button>
         </div>
         <div className="actions">
           {activeTab === 'scenarios' && (
@@ -156,6 +180,9 @@ function ScenariosPage() {
               </button>
               <button onClick={loadRules} className="btn-refresh">Refresh</button>
             </>
+          )}
+          {activeTab === 'alertRules' && (
+            <button onClick={loadAlertRules} className="btn-refresh">Refresh</button>
           )}
         </div>
       </div>
@@ -183,6 +210,14 @@ function ScenariosPage() {
             onDelete={handleDeleteRule}
             onRefresh={loadRules}
           />
+        )
+      )}
+
+      {activeTab === 'alertRules' && (
+        alertRulesLoading ? (
+          <LoadingSpinner />
+        ) : (
+          <AlertRulesTable rules={alertRules} />
         )
       )}
 

@@ -57,6 +57,12 @@ export const getRules = async () => {
   return response.data.rules
 }
 
+// Alert Detection Rules (Agent A - what signals/conditions trigger alerts)
+export const getAlertRules = async () => {
+  const response = await api.get('/alert-rules')
+  return response.data.rules
+}
+
 export const getRuleDetail = async (name) => {
   const response = await api.get(`/rules/${encodeURIComponent(name)}`)
   return response.data

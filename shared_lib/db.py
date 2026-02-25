@@ -7,6 +7,7 @@ Python stdlib sqlite3 only; no extra dependency.
 import json
 import sqlite3
 import threading
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -323,6 +324,33 @@ def query_telemetry(
                    FROM telemetry WHERE {where}
                    ORDER BY ts DESC LIMIT ?""",
                 tuple(params),
+            )
+            rows = cur.fetchall()
+            cols = [c[0] for c in cur.description]
+            return [dict(zip(cols, r)) for r in rows]
+        finally:
+            conn.close()
+
+
+def query_telemetry_window(
+    asset_id: str,
+    window_sec: int = 60,
+    limit: int = 200,
+) -> List[Dict[str, Any]]:
+    """Query telemetry for an asset in the last window_sec seconds. Returns rows in ascending ts order (oldest first)."""
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(seconds=window_sec)
+    since_ts = since.strftime("%Y-%m-%dT%H:%M:%S")
+    until_ts = now.strftime("%Y-%m-%dT%H:%M:%S")
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.execute(
+                """SELECT ts, plant_id, asset_id, pressure_bar, flow_m3h, temp_c, bearing_temp_c,
+                          vibration_rms, rpm, motor_current_a, valve_open_pct, fault, severity
+                   FROM telemetry WHERE asset_id = ? AND ts >= ? AND ts <= ?
+                   ORDER BY ts ASC LIMIT ?""",
+                (asset_id, since_ts, until_ts, limit),
             )
             rows = cur.fetchall()
             cols = [c[0] for c in cur.description]

@@ -143,6 +143,107 @@ def query_alerts(
     return "\n".join(lines)
 
 
+@tool
+def get_telemetry_window(
+    asset_id: str,
+    window_sec: int = 60,
+) -> str:
+    """
+    Fetch recent telemetry for an asset over the last N seconds.
+    Use this to analyze trends, check sustained values, or see how signals evolved.
+    asset_id: e.g. pump01, pump02
+    window_sec: how many seconds of history to fetch (default 60)
+    Returns telemetry rows in chronological order (oldest first) for trend analysis.
+    """
+    db = _get_db()
+    if not db:
+        return "Database not available."
+    try:
+        rows = db.query_telemetry_window(asset_id=asset_id, window_sec=window_sec)
+    except Exception as e:
+        return f"Query error: {e}"
+    if not rows:
+        return f"No telemetry found for asset {asset_id} in the last {window_sec} seconds."
+    lines = []
+    for r in rows[:50]:
+        ts = r.get("ts", "")
+        p = r.get("pressure_bar")
+        f = r.get("flow_m3h")
+        t = r.get("temp_c")
+        bt = r.get("bearing_temp_c")
+        v = r.get("vibration_rms")
+        rpm = r.get("rpm")
+        cur = r.get("motor_current_a")
+        valve = r.get("valve_open_pct")
+        fault = r.get("fault", "")
+        lines.append(
+            f"{ts} | P={p:.2f} F={f:.2f} T={t:.2f} BT={bt:.2f} Vib={v:.2f} RPM={rpm:.1f} I={cur:.2f} Valve={valve:.1f} fault={fault}"
+        )
+    if len(rows) > 50:
+        lines.append(f"... and {len(rows) - 50} more rows")
+    return "\n".join(lines)
+
+
+@tool
+def compute_slope(
+    asset_id: str,
+    signal: str,
+    window_sec: int = 60,
+) -> str:
+    """
+    Compute the trend (slope) of a signal over the last N seconds.
+    Use this to detect gradual increase (e.g. bearing wear) or sudden drop (e.g. clogging).
+    asset_id: e.g. pump01, pump02
+    signal: one of pressure_bar, flow_m3h, temp_c, bearing_temp_c, vibration_rms, rpm, motor_current_a, valve_open_pct
+    window_sec: time window for slope calculation (default 60)
+    Returns slope (change per second), mean, std, and sample count.
+    Positive slope = increasing; negative slope = decreasing.
+    """
+    db = _get_db()
+    if not db:
+        return "Database not available."
+    valid_signals = [
+        "pressure_bar", "flow_m3h", "temp_c", "bearing_temp_c",
+        "vibration_rms", "rpm", "motor_current_a", "valve_open_pct",
+    ]
+    if signal not in valid_signals:
+        return f"Invalid signal. Use one of: {', '.join(valid_signals)}"
+    try:
+        rows = db.query_telemetry_window(asset_id=asset_id, window_sec=window_sec)
+    except Exception as e:
+        return f"Query error: {e}"
+    if len(rows) < 2:
+        return f"Not enough data for slope (need at least 2 points). Found {len(rows)} for asset {asset_id}."
+    values = [r.get(signal) for r in rows if r.get(signal) is not None]
+    if len(values) < 2:
+        return f"No valid {signal} values in the window."
+    n = len(values)
+    mean = sum(values) / n
+    variance = sum((x - mean) ** 2 for x in values) / n
+    std = variance ** 0.5
+    t0 = rows[0].get("ts")
+    t_last = rows[-1].get("ts")
+    try:
+        from datetime import datetime
+        dt0 = datetime.fromisoformat(t0.replace("Z", "+00:00")) if isinstance(t0, str) else t0
+        dt1 = datetime.fromisoformat(t_last.replace("Z", "+00:00")) if isinstance(t_last, str) else t_last
+        dt_sec = (dt1 - dt0).total_seconds()
+    except Exception:
+        dt_sec = window_sec
+    slope = (values[-1] - values[0]) / dt_sec if dt_sec > 0 else 0.0
+    return (
+        f"signal={signal} window_sec={window_sec} asset={asset_id}\n"
+        f"slope={slope:.6f} (per second) mean={mean:.4f} std={std:.4f} count={n}\n"
+        f"Interpretation: {'increasing' if slope > 0 else 'decreasing' if slope < 0 else 'stable'} trend"
+    )
+
+
 def get_diagnosis_tools() -> List:
     """Return list of LangChain tools for the diagnosis agent."""
-    return [query_rules, query_telemetry, query_alerts]
+    return [
+        query_rules,
+        query_telemetry,
+        query_alerts,
+        get_telemetry_window,
+        compute_slope,
+    ]

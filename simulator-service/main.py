@@ -404,6 +404,25 @@ async def start_scenario(asset_id: str):
         thread.start()
         simulation_threads[asset_id] = thread
 
+        # Log to evaluation for evaluation scripts
+        eval_dir = _project_root / "evaluation"
+        eval_dir.mkdir(parents=True, exist_ok=True)
+        scenario = executor.scenario
+        faults = scenario.get("faults", [])
+        fault_types = [f.get("type", "unknown") for f in faults]
+        fault_start_sec = min((f.get("start_time_sec", 0) for f in faults), default=0)
+        record = {
+            "start_ts": datetime.now(timezone.utc).isoformat(),
+            "asset_id": asset_id,
+            "plant_id": scenario.get("plant_id", "plant01"),
+            "scenario_name": scenario.get("name", "unknown"),
+            "duration_sec": scenario.get("duration_sec", 0),
+            "fault_types": fault_types,
+            "expected_root_cause": fault_types[0] if fault_types else "none",
+            "fault_start_sec": fault_start_sec,
+        }
+        append_jsonl(eval_dir / "scenario_runs.jsonl", record)
+
     return {"status": "started", "asset_id": asset_id}
 
 
@@ -502,6 +521,22 @@ async def trigger_alert(request: TriggerAlertRequest):
         
         # Publish alert
         alert_publisher.publish(alert, append_jsonl)
+
+        # Write to evaluation folder for evaluation scripts (manual triggers only)
+        eval_dir = _project_root / "evaluation"
+        eval_dir.mkdir(parents=True, exist_ok=True)
+        manual_triggers_path = eval_dir / "manual_triggers.jsonl"
+        record = {
+            "ts": alert.ts.isoformat(),
+            "plant_id": alert.plant_id,
+            "asset_id": alert.asset_id,
+            "signal": request.signal,
+            "severity": request.severity,
+            "score": request.score,
+            "method": request.method,
+            "evidence": request.evidence,
+        }
+        append_jsonl(manual_triggers_path, record)
         
         return {
             "status": "triggered",

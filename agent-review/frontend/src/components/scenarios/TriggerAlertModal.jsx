@@ -7,6 +7,10 @@ const SIGNAL_OPTIONS = [
   'pressure_bar',
   'motor_current_a',
   'temp_c',
+  'flow_m3h',
+  'rpm',
+  'valve_flow_mismatch',
+  'valve_open_pct',
 ]
 
 function TriggerAlertModal({ onTrigger, onClose }) {
