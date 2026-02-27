@@ -103,19 +103,25 @@ def insert_diagnosis(
     recommended_actions: Optional[List[str]] = None,
     evidence: Optional[List[Dict[str, Any]]] = None,
     alert_id: Optional[int] = None,
+    recursion_limit: Optional[int] = None,
+    total_tokens: Optional[int] = None,
+    prompt_tokens: Optional[int] = None,
+    completion_tokens: Optional[int] = None,
 ) -> Optional[int]:
-    """Insert diagnosis and return the inserted row id (for Agent C linkage)."""
+    """Insert diagnosis and return the inserted row id (for Agent C linkage).
+    Eval params (recursion_limit, total_tokens, etc.) are optional for eval tracking."""
     with _lock:
         conn = get_connection()
         try:
             conn.execute(
-                """INSERT INTO diagnosis (ts, plant_id, asset_id, root_cause, confidence, impact, recommended_actions, evidence, alert_id)
-                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                """INSERT INTO diagnosis (ts, plant_id, asset_id, root_cause, confidence, impact, recommended_actions, evidence, alert_id, recursion_limit, total_tokens, prompt_tokens, completion_tokens)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     ts, plant_id, asset_id, root_cause, confidence, impact,
                     json.dumps(recommended_actions) if recommended_actions else None,
                     json.dumps(evidence) if evidence else None,
                     alert_id,
+                    recursion_limit, total_tokens, prompt_tokens, completion_tokens,
                 ),
             )
             row_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
@@ -406,7 +412,8 @@ def get_diagnosis_by_id(diagnosis_id: int) -> Optional[Dict[str, Any]]:
         try:
             cur = conn.execute(
                 """SELECT id, ts, plant_id, asset_id, root_cause, confidence, impact,
-                          recommended_actions, evidence, alert_id
+                          recommended_actions, evidence, alert_id,
+                          recursion_limit, total_tokens, prompt_tokens, completion_tokens
                    FROM diagnosis WHERE id = ?""",
                 (diagnosis_id,),
             )
@@ -433,7 +440,8 @@ def get_diagnosis_by_alert_id(alert_id: int) -> Optional[Dict[str, Any]]:
         try:
             cur = conn.execute(
                 """SELECT id, ts, plant_id, asset_id, root_cause, confidence, impact,
-                          recommended_actions, evidence, alert_id
+                          recommended_actions, evidence, alert_id,
+                          recursion_limit, total_tokens, prompt_tokens, completion_tokens
                    FROM diagnosis WHERE alert_id = ? ORDER BY ts DESC LIMIT 1""",
                 (alert_id,),
             )

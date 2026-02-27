@@ -91,12 +91,18 @@ def _build_alert_summary(alert_payload: dict) -> str:
     return "\n".join(lines)
 
 
-def run_diagnosis(alert_payload: dict) -> Optional[DiagnosisReport]:
+def run_diagnosis(alert_payload: dict) -> tuple[Optional[DiagnosisReport], dict]:
     """
     Run the ReAct agent to diagnose the given alert.
-    Returns DiagnosisReport or None on failure.
+    Returns (DiagnosisReport or None on failure, eval_metadata).
+    eval_metadata: {recursion_limit, total_tokens, prompt_tokens, completion_tokens}
     """
     from langchain_core.messages import HumanMessage, SystemMessage
+    settings = get_settings()
+    recursion_limit = getattr(settings, "diagnosis_recursion_limit", 40) or 40
+    config = {"recursion_limit": recursion_limit}
+    eval_metadata: dict = {"recursion_limit": recursion_limit, "total_tokens": None, "prompt_tokens": None, "completion_tokens": None}
+
     agent = create_diagnosis_agent()
     alert_summary = _build_alert_summary(alert_payload)
     user_prompt = build_user_prompt(alert_summary)
@@ -104,15 +110,28 @@ def run_diagnosis(alert_payload: dict) -> Optional[DiagnosisReport]:
         SystemMessage(content=DIAGNOSIS_SYSTEM_PROMPT),
         HumanMessage(content=user_prompt),
     ]
-    config = {"recursion_limit": 15}
-    result = agent.invoke({"messages": messages}, config)
+
+    try:
+        from langchain_community.callbacks import get_openai_callback
+    except ImportError:
+        get_openai_callback = None
+
+    if get_openai_callback:
+        with get_openai_callback() as cb:
+            result = agent.invoke({"messages": messages}, config)
+            eval_metadata["total_tokens"] = getattr(cb, "total_tokens", None)
+            eval_metadata["prompt_tokens"] = getattr(cb, "prompt_tokens", None)
+            eval_metadata["completion_tokens"] = getattr(cb, "completion_tokens", None)
+    else:
+        result = agent.invoke({"messages": messages}, config)
+
     if not result or "messages" not in result:
-        return None
+        return None, eval_metadata
     last_msg = result["messages"][-1]
     content = getattr(last_msg, "content", "") or ""
     parsed = _parse_final_answer(content)
     if not parsed:
-        return None
+        return None, eval_metadata
     try:
         rc = parsed.get("root_cause", "unknown")
         root_cause = RootCause(rc) if rc in [e.value for e in RootCause] else RootCause.UNKNOWN
@@ -138,6 +157,6 @@ def run_diagnosis(alert_payload: dict) -> Optional[DiagnosisReport]:
                 {"rule": e.get("rule", ""), "details": e.get("details", {})}
                 for e in parsed.get("evidence", [])
             ],
-        )
+        ), eval_metadata
     except Exception:
-        return None
+        return None, eval_metadata

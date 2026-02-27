@@ -358,7 +358,7 @@ ALERT_RULES = [
     {"signal": "motor_current_a", "type": "threshold_high", "warning": 38, "critical": 45, "unit": "A"},
     {"signal": "temp_c", "type": "threshold_high", "warning": 80, "critical": 95, "unit": "°C"},
     {"signal": "flow_m3h", "type": "threshold_low", "warning": 80, "critical": 50, "unit": "m³/h"},
-    {"signal": "rpm", "type": "range", "min": 1400, "max": 1600, "unit": "rpm"},
+    {"signal": "rpm", "type": "range", "min": 2800, "max": 3100, "unit": "rpm"},
     {"signal": "valve_flow_mismatch", "type": "combination", "desc": "valve > 80% but flow < 50 m³/h for > 20s"},
     {"signal": "vibration_rms", "type": "slope", "warning": 0.03, "critical": 0.08, "unit": "/s"},
     {"signal": "bearing_temp_c", "type": "slope", "warning": 0.1, "critical": 0.3, "unit": "°C/s"},

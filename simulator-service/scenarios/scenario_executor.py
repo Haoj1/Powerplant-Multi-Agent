@@ -240,6 +240,7 @@ class ScenarioExecutor:
     def get_status(self) -> Dict[str, Any]:
         """Get current execution status."""
         return {
+            "scenario_name": self.scenario.get("name", "unknown"),
             "running": self.running,
             "current_time_sec": self.current_time,
             "duration_sec": self.scenario["duration_sec"],

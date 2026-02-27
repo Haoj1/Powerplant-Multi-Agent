@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "name": "clogging_eval",
+  "description": "Fast clogging for eval - flow_m3h, pressure_bar, motor_current_a (threshold + slope)",
+  "plant_id": "plant01",
+  "asset_id": "pump01",
+  "seed": 12345,
+  "duration_sec": 180,
+  "initial_conditions": {"rpm": 2950, "valve_open_pct": 60},
+  "faults": [
+    {
+      "type": "clogging",
+      "start_time_sec": 3,
+      "params": {"resistance_factor": 5.5}
+    }
+  ],
+  "setpoints": []
+}

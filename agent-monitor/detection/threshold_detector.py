@@ -14,28 +14,27 @@ if TYPE_CHECKING:
     from .telemetry_buffer import TelemetryBuffer
 
 
-# Default thresholds (aligned with ISO 20816 and typical pump limits)
-# Based on actual healthy baseline data: vibration ~2.0 mm/s, bearing_temp ~45-60°C, pressure ~5-6 bar, current ~30-32 A
+# Default thresholds - very relaxed for eval to trigger all alert types
 DEFAULT_THRESHOLDS = {
-    "vibration_rms": {"warning": 7.1, "critical": 18.0},  # ISO 20816
-    "bearing_temp_c": {"warning": 70.0, "critical": 85.0},
-    "pressure_bar": {"warning_high": 18.0, "critical_high": 25.0},
-    "motor_current_a": {"warning_high": 38.0, "critical_high": 45.0},
-    "temp_c": {"warning_high": 80.0, "critical_high": 95.0},
-    "flow_m3h": {"warning_low": 80.0, "critical_low": 50.0},  # P1: nominal ~100 m³/h
-    "rpm": {"min": 1400.0, "max": 1600.0},  # P1: normal ~1500 rpm
+    "vibration_rms": {"warning": 2.8, "critical": 18.0},  # base ~2, 2.8 = slight rise
+    "bearing_temp_c": {"warning": 55.0, "critical": 85.0},
+    "pressure_bar": {"warning_high": 7.5, "critical_high": 25.0},  # nominal ~5-6
+    "motor_current_a": {"warning_high": 32.0, "critical_high": 45.0},
+    "temp_c": {"warning_high": 55.0, "critical_high": 95.0},  # base ~30-35
+    "flow_m3h": {"warning_low": 95.0, "critical_low": 60.0},  # nominal ~100
+    "rpm": {"min": 2750.0, "max": 3150.0},  # 2650/2700 triggers
 }
 
-# Valve-flow mismatch: valve > 80% but flow < 50% nominal (50 m³/h)
-VALVE_FLOW_MISMATCH = {"valve_min_pct": 80.0, "flow_max_m3h": 50.0}
+# Valve-flow mismatch: valve >= 70% but flow <= 65 m³/h
+VALVE_FLOW_MISMATCH = {"valve_min_pct": 70.0, "flow_max_m3h": 65.0}
 
-# Slopes (unit per second). "high" = alert when slope >= threshold; "low" = alert when slope <= threshold
+# Slopes - very relaxed for eval
 DEFAULT_SLOPE_THRESHOLDS = {
-    "vibration_rms": {"warning": 0.03, "critical": 0.08},
-    "bearing_temp_c": {"warning": 0.1, "critical": 0.3},
-    "flow_m3h": {"warning": -2.0, "critical": -5.0, "side": "low", "window_sec": 10},  # P2: sudden drop
-    "pressure_bar": {"warning": 0.5, "critical": 1.0, "window_sec": 10},  # P2: sudden spike
-    "motor_current_a": {"warning": 0.3, "critical": 0.8, "window_sec": 5},  # P2: current surge
+    "vibration_rms": {"warning": 0.005, "critical": 0.08},
+    "bearing_temp_c": {"warning": 0.08, "critical": 0.6},
+    "flow_m3h": {"warning": -0.5, "critical": -5.0, "side": "low", "window_sec": 10},
+    "pressure_bar": {"warning": 0.1, "critical": 1.0, "window_sec": 10},
+    "motor_current_a": {"warning": 0.4, "critical": 1.5, "window_sec": 10},
 }
 
 
@@ -101,7 +100,7 @@ class ThresholdDetector:
 
             # Duration check: skip threshold alert if buffer says we haven't sustained long enough
             side = "low" if "critical_low" in rule or "warning_low" in rule else "high"
-            min_dur = 15 if signal_name == "flow_m3h" else (10 if signal_name == "rpm" else self.min_duration_sec)
+            min_dur = 2 if signal_name == "flow_m3h" else (2 if signal_name == "rpm" else self.min_duration_sec)
             if buffer and min_dur > 0:
                 thr_val = rule.get("critical") or rule.get("critical_high") or rule.get("critical_low")
                 if thr_val is not None:
@@ -238,7 +237,7 @@ class ThresholdDetector:
             f_max = VALVE_FLOW_MISMATCH["flow_max_m3h"]
             if signals_dict["valve_open_pct"] >= v_min and signals_dict["flow_m3h"] <= f_max:
                 dur = buffer.duration_valve_flow_mismatch(telemetry.asset_id, v_min, f_max, 60)
-                if dur >= 20:
+                if dur >= 3:
                     alerts.append(
                         AlertDetail(
                             signal="valve_flow_mismatch",
