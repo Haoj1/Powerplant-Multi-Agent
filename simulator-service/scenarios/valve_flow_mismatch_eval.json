@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "name": "valve_flow_mismatch_eval",
+  "description": "Valve stuck 85% + clogging - valve_flow_mismatch (valve high, flow low)",
+  "plant_id": "plant01",
+  "asset_id": "pump01",
+  "seed": 12345,
+  "duration_sec": 180,
+  "initial_conditions": {"rpm": 2950, "valve_open_pct": 60},
+  "faults": [
+    {
+      "type": "valve_stuck",
+      "start_time_sec": 10,
+      "params": {"stuck_value": 85}
+    },
+    {
+      "type": "clogging",
+      "start_time_sec": 5,
+      "params": {"resistance_factor": 4.5}
+    }
+  ],
+  "setpoints": []
+}

@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     
     # Agent Monitor Configuration
     monitor_window_sec: int = 120
+    monitor_min_duration_sec: int = 5  # Min sustained breach (sec) before threshold alert. Use 2 for eval.
     
     # VLM Configuration (for multimodal vision)
     vlm_provider: str = "claude"  # "claude" or "openai"
@@ -72,6 +73,8 @@ class Settings(BaseSettings):
     diagnosis_rules_path: str = "agent-diagnosis/rules"
     # Min seconds between producing diagnoses (global cooldown to prevent pile-up)
     diagnosis_cooldown_sec: float = 20.0
+    # LangGraph recursion limit for ReAct agent (for eval: record to DB/log)
+    diagnosis_recursion_limit: int = 40
 
     # Agent C (Review Queue)
     ticket_cooldown_sec: float = 30.0  # Max one review_request per asset per N sec

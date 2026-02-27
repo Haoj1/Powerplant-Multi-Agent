@@ -80,7 +80,7 @@ def on_alert(topic: str, payload: dict):
 
     print(f"[Agent B] Received alert for {asset_id}, running diagnosis...")
     try:
-        report = run_diagnosis(payload)
+        report, eval_metadata = run_diagnosis(payload)
     except Exception as e:
         print(f"[Agent B] Diagnosis error: {e}")
         import traceback
@@ -93,7 +93,10 @@ def on_alert(topic: str, payload: dict):
         print("[Agent B] Could not produce diagnosis (parse or LLM error)")
         with _stats_lock:
             stats["diagnoses_failed"] += 1
+        print(f"[Agent B] eval: recursion_limit={eval_metadata.get('recursion_limit')}, tokens={eval_metadata.get('total_tokens')} (prompt={eval_metadata.get('prompt_tokens')}, completion={eval_metadata.get('completion_tokens')})")
         return
+
+    print(f"[Agent B] eval: recursion_limit={eval_metadata.get('recursion_limit')}, tokens={eval_metadata.get('total_tokens')} (prompt={eval_metadata.get('prompt_tokens')}, completion={eval_metadata.get('completion_tokens')})")
 
     diagnosis_id = None
     if shared_db:
@@ -108,6 +111,10 @@ def on_alert(topic: str, payload: dict):
                 recommended_actions=report.recommended_actions,
                 evidence=[e.model_dump() if hasattr(e, "model_dump") else e for e in report.evidence],
                 alert_id=alert_id,
+                recursion_limit=eval_metadata.get("recursion_limit"),
+                total_tokens=eval_metadata.get("total_tokens"),
+                prompt_tokens=eval_metadata.get("prompt_tokens"),
+                completion_tokens=eval_metadata.get("completion_tokens"),
             )
             # Index diagnosis to vector DB for RAG
             if diagnosis_id and index_diagnosis:
@@ -126,7 +133,7 @@ def on_alert(topic: str, payload: dict):
 
     if diagnosis_publisher:
         try:
-            diagnosis_publisher.publish(report, append_jsonl, alert_id=alert_id, diagnosis_id=diagnosis_id)
+            diagnosis_publisher.publish(report, append_jsonl, alert_id=alert_id, diagnosis_id=diagnosis_id, eval_metadata=eval_metadata)
             print(f"[Agent B] Published diagnosis: root_cause={report.root_cause.value}, confidence={report.confidence:.2f}")
         except Exception as e:
             print(f"[Agent B] Publish error: {e}")

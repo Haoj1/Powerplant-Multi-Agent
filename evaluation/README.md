@@ -87,3 +87,22 @@ python evaluation/run_evaluation.py
 3. **Wait** 30–60 seconds for alerts and diagnoses to appear
 4. **Run evaluation**: `python evaluation/run_evaluation.py`
 5. Optionally **clear** `data/monitoring.db` and `evaluation/*.jsonl` before a fresh run
+
+---
+
+## Using a Fresh Eval Database
+
+To keep production data separate and run evaluation on a clean DB:
+
+```bash
+# 1. Backup current DB, create fresh eval DB, clear evaluation JSONL
+./scripts/use_eval_db.sh
+
+# 2. Start services with eval DB (choose one):
+export SQLITE_PATH=data/monitoring_eval.db
+./scripts/start_all_agents.sh
+
+# Or add to .env: SQLITE_PATH=data/monitoring_eval.db
+```
+
+**RAG data:** The vector index (vec0) lives in the same SQLite file. The eval DB starts empty. As new alerts and diagnoses are created during eval runs, they are automatically indexed into vec0. No manual re-import needed.

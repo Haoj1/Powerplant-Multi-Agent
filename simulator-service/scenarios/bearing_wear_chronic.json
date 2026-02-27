@@ -15,7 +15,7 @@
       "type": "bearing_wear",
       "start_time_sec": 100,
       "params": {
-        "rate_per_sec": 0.0001
+        "rate_per_sec": 0.00325
       }
     }
   ],

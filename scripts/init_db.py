@@ -17,7 +17,10 @@ except Exception:
     get_settings = None
 
 DB_PATH = None
-if get_settings:
+if len(sys.argv) > 1:
+    # Allow: python init_db.py data/monitoring_eval.db
+    DB_PATH = sys.argv[1]
+elif get_settings:
     DB_PATH = get_settings().sqlite_path
 else:
     DB_PATH = "data/monitoring.db"
@@ -217,6 +220,22 @@ def _migrate_diagnosis_alert_id(conn):
     conn.commit()
 
 
+def _migrate_diagnosis_eval_columns(conn):
+    """Add eval columns: recursion_limit, total_tokens, prompt_tokens, completion_tokens."""
+    cur = conn.execute("PRAGMA table_info(diagnosis)")
+    cols = [row[1] for row in cur.fetchall()]
+    for col, sql_type in [
+        ("recursion_limit", "INTEGER"),
+        ("total_tokens", "INTEGER"),
+        ("prompt_tokens", "INTEGER"),
+        ("completion_tokens", "INTEGER"),
+    ]:
+        if col not in cols:
+            conn.execute(f"ALTER TABLE diagnosis ADD COLUMN {col} {sql_type}")
+            conn.commit()
+            print(f"Migration: added diagnosis.{col}")
+
+
 def _migrate_tickets_url(conn):
     """Add url column to tickets if missing (for Salesforce Case/Work Order link)."""
     cur = conn.execute("PRAGMA table_info(tickets)")
@@ -262,6 +281,7 @@ def main():
     conn.executescript(SCHEMA_SQL)
     conn.commit()
     _migrate_diagnosis_alert_id(conn)
+    _migrate_diagnosis_eval_columns(conn)
     _migrate_tickets_url(conn)
     _init_vector_table(conn)  # Optional: initialize vec0 virtual table if sqlite-vec available
     conn.close()

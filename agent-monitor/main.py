@@ -11,7 +11,8 @@ if str(_agent_dir) not in sys.path:
     sys.path.insert(0, str(_agent_dir))
 
 import threading
-from typing import Set
+from datetime import datetime, timezone
+from typing import Dict, Set, Tuple
 
 from fastapi import FastAPI
 from pydantic import ValidationError
@@ -55,6 +56,11 @@ detector: ThresholdDetector = None
 buffer: TelemetryBuffer = None
 alert_publisher: AlertPublisher = None
 
+# Per (asset_id, signal) cooldown to avoid flooding same alert
+_alert_cooldown: Dict[Tuple[str, str], datetime] = {}
+_alert_cooldown_sec = 60  # Don't re-alert same signal for same asset within 60s
+_cooldown_lock = threading.Lock()
+
 
 def on_telemetry(topic: str, payload: dict):
     """Handle incoming telemetry: validate, detect, publish alert if needed."""
@@ -73,17 +79,31 @@ def on_telemetry(topic: str, payload: dict):
     if buffer:
         buffer.push(telemetry)
 
-    # Debug: print first few telemetry values to see what we're getting
-    if stats["messages_processed"] <= 3:
-        print(f"[Agent A] Received telemetry #{stats['messages_processed']}: "
-              f"pressure={telemetry.signals.pressure_bar:.2f} bar, "
-              f"current={telemetry.signals.motor_current_a:.2f} A, "
-              f"vibration={telemetry.signals.vibration_rms:.2f} mm/s")
+    # Debug: print first 3 + every 60th message to verify telemetry flow and values
+    n = stats["messages_processed"]
+    if n <= 3 or (n % 60 == 0 and n <= 300):
+        print(f"[Agent A] telemetry #{n}: vib={telemetry.signals.vibration_rms:.2f} mm/s, "
+              f"bearing_temp={telemetry.signals.bearing_temp_c:.1f}C, "
+              f"flow={telemetry.signals.flow_m3h:.1f}, pressure={telemetry.signals.pressure_bar:.2f} bar")
     
     alert = detector.detect(telemetry, buffer) if detector else None
     if alert:
+        # Cooldown: skip if we've already alerted for these (asset, signal) recently
+        now = datetime.now(timezone.utc)
+        keys = [(telemetry.asset_id, a.signal) for a in alert.alerts]
+        with _cooldown_lock:
+            if keys and all(
+                (aid, sig) in _alert_cooldown and (now - _alert_cooldown[(aid, sig)]).total_seconds() < _alert_cooldown_sec
+                for aid, sig in keys
+            ):
+                alert = None  # All signals in cooldown, skip
+            else:
+                for aid, sig in keys:
+                    _alert_cooldown[(aid, sig)] = now
+
+    if alert:
         print(f"[Agent A] Alert generated: {alert.severity} - {len(alert.alerts)} signal(s)")
-    
+
     if alert and alert_publisher:
         with _stats_lock:
             stats["alerts_generated"] += 1
@@ -120,7 +140,8 @@ def on_telemetry(topic: str, payload: dict):
 async def startup_event():
     global subscriber, detector, buffer, alert_publisher
     buffer = TelemetryBuffer(window_sec=120, max_points_per_asset=200)
-    detector = ThresholdDetector(min_duration_sec=5, window_sec=60)
+    min_dur = getattr(settings, "monitor_min_duration_sec", 5) or 5
+    detector = ThresholdDetector(min_duration_sec=min_dur, window_sec=60)
     telemetry_topic = f"{settings.mqtt_topic_telemetry}/#"
     subscriber = MQTTSubscriber(
         host=settings.mqtt_host,

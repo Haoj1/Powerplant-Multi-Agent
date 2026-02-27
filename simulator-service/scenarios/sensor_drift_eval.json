@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "name": "sensor_drift_eval",
+  "description": "Pressure sensor drift - pressure_bar threshold; temp_c drift for temp_c threshold",
+  "plant_id": "plant01",
+  "asset_id": "pump01",
+  "seed": 12345,
+  "duration_sec": 180,
+  "initial_conditions": {"rpm": 2950, "valve_open_pct": 60},
+  "faults": [
+    {
+      "type": "sensor_drift",
+      "start_time_sec": 5,
+      "params": {"signal": "pressure_bar", "drift_rate": 0.5}
+    },
+    {
+      "type": "sensor_drift",
+      "start_time_sec": 5,
+      "params": {"signal": "temp_c", "drift_rate": 1.0}
+    }
+  ],
+  "setpoints": []
+}

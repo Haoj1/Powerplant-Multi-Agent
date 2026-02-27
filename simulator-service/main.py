@@ -151,7 +151,7 @@ def simulation_loop(asset_id: str):
             telemetry = executor.step(dt)
 
             if telemetry is None:
-                running = False
+                running[asset_id] = False
                 break
 
             current_sim_time[asset_id] += dt
@@ -431,15 +431,22 @@ async def stop_scenario(asset_id: str):
     """Stop scenario execution for a specific asset."""
     global running, executors
 
-    with _executors_lock:
-        if not running.get(asset_id, False):
-            return {"status": "already_stopped", "asset_id": asset_id}
+    try:
+        with _executors_lock:
+            if not isinstance(running, dict):
+                running = {}  # Recover if corrupted (e.g. running=False bug)
+            if not running.get(asset_id, False):
+                return {"status": "already_stopped", "asset_id": asset_id}
 
-        running[asset_id] = False
-        if asset_id in executors:
-            executors[asset_id].stop()
+            running[asset_id] = False
+            if asset_id in executors:
+                executors[asset_id].stop()
 
-    return {"status": "stopped", "asset_id": asset_id}
+        return {"status": "stopped", "asset_id": asset_id}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/scenario/stop")

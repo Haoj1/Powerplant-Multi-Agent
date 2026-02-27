@@ -1,5 +1,6 @@
 # SQLite (local query/dashboard DB)
 data/*.db
+data/backups/
 
 # Python
 __pycache__/
