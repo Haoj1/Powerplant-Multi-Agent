@@ -15,6 +15,7 @@ class FaultType(str, Enum):
     VALVE_STUCK = "valve_stuck"
     SENSOR_DRIFT = "sensor_drift"
     SENSOR_STUCK = "sensor_stuck"
+    SENSOR_OVERRIDE = "sensor_override"  # For eval: force signal to fixed value
     NOISE_BURST = "noise_burst"
     UNKNOWN = "unknown"
 

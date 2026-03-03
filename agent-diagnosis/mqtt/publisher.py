@@ -33,7 +33,7 @@ class DiagnosisPublisher:
             append_jsonl_fn: Function (path, dict) to append JSONL
             alert_id: Optional alert id for DB linkage
             diagnosis_id: Optional diagnosis id for Agent C linkage
-            eval_metadata: Optional dict with recursion_limit, total_tokens, prompt_tokens, completion_tokens
+            eval_metadata: Optional dict with recursion_limit, actual_steps, total_tokens, prompt_tokens, completion_tokens
         """
         topic = f"{self.diagnosis_topic_prefix}/{report.asset_id}"
         d = report.model_dump()
@@ -43,6 +43,7 @@ class DiagnosisPublisher:
             d["diagnosis_id"] = diagnosis_id
         if eval_metadata:
             d["recursion_limit"] = eval_metadata.get("recursion_limit")
+            d["actual_steps"] = eval_metadata.get("actual_steps")
             d["total_tokens"] = eval_metadata.get("total_tokens")
             d["prompt_tokens"] = eval_metadata.get("prompt_tokens")
             d["completion_tokens"] = eval_metadata.get("completion_tokens")

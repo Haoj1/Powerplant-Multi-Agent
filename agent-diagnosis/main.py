@@ -19,7 +19,6 @@ except Exception:
     pass
 
 import threading
-import time
 from typing import Optional
 
 from fastapi import FastAPI
@@ -41,6 +40,11 @@ except ImportError:
 from mqtt import AlertsSubscriber, DiagnosisPublisher
 from agent import run_diagnosis
 
+try:
+    from kafka_queue import DiagnosisQueue
+except ImportError:
+    DiagnosisQueue = None
+
 
 app = FastAPI(
     title="Agent Diagnosis",
@@ -51,34 +55,19 @@ app = FastAPI(
 settings = get_settings()
 stats = {"alerts_received": 0, "diagnoses_published": 0, "diagnoses_failed": 0, "diagnoses_skipped_cooldown": 0}
 _stats_lock = threading.Lock()
-_last_diagnosis_time: float = 0.0
 
 subscriber: Optional[AlertsSubscriber] = None
 diagnosis_publisher: Optional[DiagnosisPublisher] = None
+diagnosis_queue: Optional["DiagnosisQueue"] = None
 
 
-def on_alert(topic: str, payload: dict):
-    """Handle incoming alert: run ReAct diagnosis, publish and write to DB (with cooldown)."""
-    global diagnosis_publisher, stats, _last_diagnosis_time
-    with _stats_lock:
-        stats["alerts_received"] += 1
-
+def _run_and_publish_diagnosis(payload: dict):
+    """Run diagnosis and publish to MQTT/DB. Shared by Kafka worker and sync path."""
+    global diagnosis_publisher, stats
     asset_id = payload.get("asset_id", "")
     alert_id = payload.get("alert_id")
-    if not asset_id:
-        print("[Agent B] Ignoring alert without asset_id")
-        return
 
-    cooldown = getattr(settings, "diagnosis_cooldown_sec", 20.0) or 0.0
-    if cooldown > 0:
-        now = time.time()
-        if now - _last_diagnosis_time < cooldown:
-            with _stats_lock:
-                stats["diagnoses_skipped_cooldown"] = stats.get("diagnoses_skipped_cooldown", 0) + 1
-            print(f"[Agent B] Skipped (cooldown {cooldown}s), next in {cooldown - (now - _last_diagnosis_time):.0f}s")
-            return
-
-    print(f"[Agent B] Received alert for {asset_id}, running diagnosis...")
+    print(f"[Agent B] Running diagnosis for {asset_id}...")
     try:
         report, eval_metadata = run_diagnosis(payload)
     except Exception as e:
@@ -93,10 +82,10 @@ def on_alert(topic: str, payload: dict):
         print("[Agent B] Could not produce diagnosis (parse or LLM error)")
         with _stats_lock:
             stats["diagnoses_failed"] += 1
-        print(f"[Agent B] eval: recursion_limit={eval_metadata.get('recursion_limit')}, tokens={eval_metadata.get('total_tokens')} (prompt={eval_metadata.get('prompt_tokens')}, completion={eval_metadata.get('completion_tokens')})")
+        print(f"[Agent B] eval: recursion_limit={eval_metadata.get('recursion_limit')}, actual_steps={eval_metadata.get('actual_steps')}, tokens={eval_metadata.get('total_tokens')} (prompt={eval_metadata.get('prompt_tokens')}, completion={eval_metadata.get('completion_tokens')})")
         return
 
-    print(f"[Agent B] eval: recursion_limit={eval_metadata.get('recursion_limit')}, tokens={eval_metadata.get('total_tokens')} (prompt={eval_metadata.get('prompt_tokens')}, completion={eval_metadata.get('completion_tokens')})")
+    print(f"[Agent B] eval: recursion_limit={eval_metadata.get('recursion_limit')}, actual_steps={eval_metadata.get('actual_steps')}, tokens={eval_metadata.get('total_tokens')} (prompt={eval_metadata.get('prompt_tokens')}, completion={eval_metadata.get('completion_tokens')})")
 
     diagnosis_id = None
     if shared_db:
@@ -112,11 +101,11 @@ def on_alert(topic: str, payload: dict):
                 evidence=[e.model_dump() if hasattr(e, "model_dump") else e for e in report.evidence],
                 alert_id=alert_id,
                 recursion_limit=eval_metadata.get("recursion_limit"),
+                actual_steps=eval_metadata.get("actual_steps"),
                 total_tokens=eval_metadata.get("total_tokens"),
                 prompt_tokens=eval_metadata.get("prompt_tokens"),
                 completion_tokens=eval_metadata.get("completion_tokens"),
             )
-            # Index diagnosis to vector DB for RAG
             if diagnosis_id and index_diagnosis:
                 diagnosis_data = {
                     "asset_id": report.asset_id,
@@ -140,12 +129,62 @@ def on_alert(topic: str, payload: dict):
 
     with _stats_lock:
         stats["diagnoses_published"] += 1
-    _last_diagnosis_time = time.time()
+
+
+# Per-fault cooldown for sync mode (when Kafka disabled)
+_sync_fault_cooldown: dict = {}
+_sync_cooldown_lock = threading.Lock()
+
+
+def _fault_key(payload: dict) -> tuple:
+    """Per-fault key: (asset_id, tuple of signals). Same fault = same key."""
+    asset_id = payload.get("asset_id", "")
+    alerts = payload.get("alerts", [])
+    signals = tuple(sorted(a.get("signal", "") for a in alerts if a.get("signal")))
+    return (asset_id, signals)
+
+
+def on_alert(topic: str, payload: dict):
+    """Handle incoming alert: queue to Kafka (with per-fault cooldown) or run sync."""
+    global diagnosis_queue, stats
+    with _stats_lock:
+        stats["alerts_received"] += 1
+
+    asset_id = payload.get("asset_id", "")
+    if not asset_id:
+        print("[Agent B] Ignoring alert without asset_id")
+        return
+
+    cooldown = settings.diagnosis_cooldown_sec or 60
+
+    if diagnosis_queue and diagnosis_queue.enabled:
+        # Kafka mode: enqueue (per-fault cooldown inside enqueue)
+        queued = diagnosis_queue.enqueue(payload)
+        if not queued:
+            with _stats_lock:
+                stats["diagnoses_skipped_cooldown"] = stats.get("diagnoses_skipped_cooldown", 0) + 1
+            print(f"[Agent B] Skipped (same fault cooldown {cooldown}s): asset={asset_id}")
+        else:
+            print(f"[Agent B] Queued alert for {asset_id}")
+    else:
+        # Sync mode: per-fault cooldown, then run directly
+        import time
+        key = _fault_key(payload)
+        now = time.time()
+        with _sync_cooldown_lock:
+            last = _sync_fault_cooldown.get(key)
+            if last is not None and (now - last) < cooldown:
+                with _stats_lock:
+                    stats["diagnoses_skipped_cooldown"] = stats.get("diagnoses_skipped_cooldown", 0) + 1
+                print(f"[Agent B] Skipped (same fault cooldown {cooldown}s): asset={asset_id}")
+                return
+            _sync_fault_cooldown[key] = now
+        _run_and_publish_diagnosis(payload)
 
 
 @app.on_event("startup")
 async def startup_event():
-    global subscriber, diagnosis_publisher
+    global subscriber, diagnosis_publisher, diagnosis_queue
     alerts_topic = f"{settings.mqtt_topic_alerts}/#"
     subscriber = AlertsSubscriber(
         host=settings.mqtt_host,
@@ -161,6 +200,16 @@ async def startup_event():
         diagnosis_topic_prefix=settings.mqtt_topic_diagnosis,
         log_dir=settings.log_dir,
     )
+    # Kafka queue: when enabled, MQTT produces to queue, consumer runs diagnosis
+    if DiagnosisQueue:
+        cooldown = settings.diagnosis_cooldown_sec or 60
+        diagnosis_queue = DiagnosisQueue(
+            on_diagnosis=_run_and_publish_diagnosis,
+            cooldown_sec=cooldown,
+        )
+        if diagnosis_queue.enabled:
+            diagnosis_queue.start_consumer()
+            print(f"[Agent B] Kafka queue enabled for diagnosis (topic={settings.kafka_diagnosis_topic})")
     # Index rules to vector DB on startup
     if index_rules:
         try:
@@ -173,7 +222,9 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    global subscriber
+    global subscriber, diagnosis_queue
+    if diagnosis_queue:
+        diagnosis_queue.stop()
     if subscriber:
         subscriber.disconnect()
 
@@ -184,6 +235,7 @@ async def health():
         "status": "healthy",
         "service": "agent-diagnosis",
         "mqtt_connected": subscriber.connected if subscriber else False,
+        "kafka_queue_enabled": bool(diagnosis_queue and diagnosis_queue.enabled),
     }
 
 

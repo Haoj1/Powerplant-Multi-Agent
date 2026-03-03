@@ -71,10 +71,13 @@ class Settings(BaseSettings):
 
     # Agent B (Diagnosis)
     diagnosis_rules_path: str = "agent-diagnosis/rules"
-    # Min seconds between producing diagnoses (global cooldown to prevent pile-up)
-    diagnosis_cooldown_sec: float = 20.0
+    # Per-fault cooldown: same (asset_id, signals) won't queue again for N sec
+    diagnosis_cooldown_sec: float = 60.0
     # LangGraph recursion limit for ReAct agent (for eval: record to DB/log)
     diagnosis_recursion_limit: int = 40
+    # Kafka: bootstrap servers for diagnosis queue (empty = use sync mode, no queue)
+    kafka_bootstrap_servers: str = ""
+    kafka_diagnosis_topic: str = "diagnosis-queue"
 
     # Agent C (Review Queue)
     ticket_cooldown_sec: float = 30.0  # Max one review_request per asset per N sec

@@ -10,6 +10,7 @@ from .fault_types import (
     ValveStuckFault,
     SensorDriftFault,
     SensorStuckFault,
+    SensorOverrideFault,
     NoiseBurstFault,
 )
 
@@ -58,6 +59,7 @@ class FaultInjector:
             "valve_stuck": ValveStuckFault,
             "sensor_drift": SensorDriftFault,
             "sensor_stuck": SensorStuckFault,
+            "sensor_override": SensorOverrideFault,
             "noise_burst": NoiseBurstFault,
         }
         
@@ -111,7 +113,7 @@ class FaultInjector:
         sensor_signals = signals.copy()
         
         for fault in self.active_faults:
-            if isinstance(fault, (SensorDriftFault, SensorStuckFault, NoiseBurstFault)):
+            if isinstance(fault, (SensorDriftFault, SensorStuckFault, SensorOverrideFault, NoiseBurstFault)):
                 for signal_name in sensor_signals:
                     sensor_signals[signal_name] = fault.apply_sensor_reading(
                         signal_name, sensor_signals[signal_name]

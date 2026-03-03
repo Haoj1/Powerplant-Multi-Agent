@@ -104,19 +104,23 @@ class TelemetryBuffer:
         """
         Return seconds the signal has been above (or below) threshold in the window.
         side: "high" = count when value >= threshold, "low" = count when value <= threshold.
+        Fix: last point adds 0; if we have 1+ matching points and total_sec < 0.5, use 0.5 so first point can trigger.
         """
         points = self.get_window(asset_id, signal, window_sec)
         if not points:
             return 0.0
         total_sec = 0.0
+        n_matching = 0
         for i in range(len(points)):
             t, v = points[i]
             above = (side == "high" and v >= threshold) or (side == "low" and v <= threshold)
             if above:
+                n_matching += 1
                 if i + 1 < len(points):
                     total_sec += (points[i + 1][0] - t).total_seconds()
-                else:
-                    total_sec += 0  # last point: no interval to add
+        # Fix: 1 matching point previously gave dur=0; allow trigger with min 0.5s (same as valve_flow_mismatch)
+        if n_matching >= 1 and total_sec < 0.5:
+            total_sec = 0.5
         return total_sec
 
     def duration_valve_flow_mismatch(
@@ -126,7 +130,11 @@ class TelemetryBuffer:
         flow_max_m3h: float,
         window_sec: Optional[int] = None,
     ) -> float:
-        """Return seconds valve_open_pct >= valve_min_pct AND flow_m3h <= flow_max_m3h in the window."""
+        """
+        Return seconds valve_open_pct >= valve_min_pct AND flow_m3h <= flow_max_m3h in the window.
+        Bug fix: previously only added dt when (current matches AND next exists), so 1 matching point
+        gave dur=0. Now: if we have 1+ matching points, add min 0.5s so first point can trigger.
+        """
         buf = self._buffers.get(asset_id, [])
         if not buf:
             return 0.0
@@ -136,6 +144,7 @@ class TelemetryBuffer:
             now = now.replace(tzinfo=timezone.utc)
         cutoff = now - timedelta(seconds=w)
         total_sec = 0.0
+        n_matching = 0
         for i, p in enumerate(buf):
             if p.ts < cutoff:
                 continue
@@ -144,7 +153,11 @@ class TelemetryBuffer:
             if valve is None or flow is None:
                 continue
             if valve >= valve_min_pct and flow <= flow_max_m3h:
+                n_matching += 1
                 if i + 1 < len(buf) and buf[i + 1].ts >= cutoff:
                     dt = (buf[i + 1].ts - p.ts).total_seconds()
                     total_sec += dt
+        # Fix: 1 matching point previously gave dur=0; allow trigger with min 0.5s
+        if n_matching >= 1 and total_sec < 0.5:
+            total_sec = 0.5
         return total_sec

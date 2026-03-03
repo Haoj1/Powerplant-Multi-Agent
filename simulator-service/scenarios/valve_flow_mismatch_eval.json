@@ -8,16 +8,8 @@
   "duration_sec": 180,
   "initial_conditions": {"rpm": 2950, "valve_open_pct": 60},
   "faults": [
-    {
-      "type": "valve_stuck",
-      "start_time_sec": 10,
-      "params": {"stuck_value": 85}
-    },
-    {
-      "type": "clogging",
-      "start_time_sec": 5,
-      "params": {"resistance_factor": 4.5}
-    }
+    {"type": "valve_stuck", "start_time_sec": 0, "params": {"stuck_value": 85}},
+    {"type": "clogging", "start_time_sec": 0, "params": {"resistance_factor": 15}}
   ],
   "setpoints": []
 }

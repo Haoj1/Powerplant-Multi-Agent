@@ -8,16 +8,8 @@
   "duration_sec": 180,
   "initial_conditions": {"rpm": 2950, "valve_open_pct": 60},
   "faults": [
-    {
-      "type": "sensor_drift",
-      "start_time_sec": 5,
-      "params": {"signal": "pressure_bar", "drift_rate": 0.5}
-    },
-    {
-      "type": "sensor_drift",
-      "start_time_sec": 5,
-      "params": {"signal": "temp_c", "drift_rate": 1.0}
-    }
+    {"type": "sensor_drift", "start_time_sec": 0, "params": {"signal": "pressure_bar", "drift_rate": 2.2}},
+    {"type": "sensor_drift", "start_time_sec": 0, "params": {"signal": "temp_c", "drift_rate": 4.0}}
   ],
   "setpoints": []
 }

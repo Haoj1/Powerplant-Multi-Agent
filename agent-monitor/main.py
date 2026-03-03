@@ -81,10 +81,14 @@ def on_telemetry(topic: str, payload: dict):
 
     # Debug: print first 3 + every 60th message to verify telemetry flow and values
     n = stats["messages_processed"]
-    if n <= 3 or (n % 60 == 0 and n <= 300):
-        print(f"[Agent A] telemetry #{n}: vib={telemetry.signals.vibration_rms:.2f} mm/s, "
-              f"bearing_temp={telemetry.signals.bearing_temp_c:.1f}C, "
-              f"flow={telemetry.signals.flow_m3h:.1f}, pressure={telemetry.signals.pressure_bar:.2f} bar")
+    debug_eval = __import__("os").environ.get("DEBUG_ALERT_EVAL", "").lower() in ("1", "true", "yes")
+    if debug_eval and (n <= 10 or n % 20 == 0):
+        s = telemetry.signals
+        print(f"[Agent A] #{n}: temp={s.temp_c:.1f} rpm={s.rpm:.0f} valve={s.valve_open_pct:.0f}% flow={s.flow_m3h:.1f}")
+    elif not debug_eval and (n <= 3 or (n % 60 == 0 and n <= 300)):
+        s = telemetry.signals
+        print(f"[Agent A] telemetry #{n}: flow={s.flow_m3h:.1f} pressure={s.pressure_bar:.2f} motor={s.motor_current_a:.1f}A "
+              f"temp={s.temp_c:.1f}C rpm={s.rpm:.0f} valve={s.valve_open_pct:.0f}%")
     
     alert = detector.detect(telemetry, buffer) if detector else None
     if alert:
@@ -140,7 +144,9 @@ def on_telemetry(topic: str, payload: dict):
 async def startup_event():
     global subscriber, detector, buffer, alert_publisher
     buffer = TelemetryBuffer(window_sec=120, max_points_per_asset=200)
-    min_dur = getattr(settings, "monitor_min_duration_sec", 5) or 5
+    min_dur = getattr(settings, "monitor_min_duration_sec", 5)
+    if min_dur is None:
+        min_dur = 5
     detector = ThresholdDetector(min_duration_sec=min_dur, window_sec=60)
     telemetry_topic = f"{settings.mqtt_topic_telemetry}/#"
     subscriber = MQTTSubscriber(

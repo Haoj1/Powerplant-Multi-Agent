@@ -7,6 +7,9 @@ pydantic-settings>=2.1.0
 
 # MQTT
 paho-mqtt>=1.6.1
+
+# Kafka (Agent B diagnosis queue)
+kafka-python>=2.0.2
 # Alternative: asyncio-mqtt>=0.16.1
 
 # HTTP client (for GitHub API, etc.)
@@ -17,6 +20,9 @@ python-dotenv>=1.0.0
 
 # Numerical computation (required for simulator)
 numpy>=1.26.0
+
+# Evaluation report charts
+matplotlib>=3.7.0
 
 # 3D visualization (for multimodal)
 pyvista>=0.43.0

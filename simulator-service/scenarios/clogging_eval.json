@@ -7,12 +7,6 @@
   "seed": 12345,
   "duration_sec": 180,
   "initial_conditions": {"rpm": 2950, "valve_open_pct": 60},
-  "faults": [
-    {
-      "type": "clogging",
-      "start_time_sec": 3,
-      "params": {"resistance_factor": 5.5}
-    }
-  ],
+  "faults": [{"type": "clogging", "start_time_sec": 0, "params": {"resistance_factor": 18}}],
   "setpoints": []
 }
