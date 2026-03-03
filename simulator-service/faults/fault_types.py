@@ -236,6 +236,26 @@ class SensorStuckFault(BaseFault):
         return 1.0 if self.active else 0.0
 
 
+class SensorOverrideFault(BaseFault):
+    """
+    Sensor override fault - force signal to fixed value (for eval/testing).
+    Effects: sensor reading = override_value
+    """
+    def __init__(self, start_time: float, params: Dict[str, Any]):
+        super().__init__("sensor_override", start_time, params)
+        self.signal_name = params.get("signal", "temp_c")
+        self.override_value = params.get("value", 0.0)
+
+    def apply_sensor_reading(self, signal_name: str, true_value: float) -> float:
+        if self.active and signal_name == self.signal_name:
+            return self.override_value
+        return true_value
+
+    def update(self, current_time: float, dt: float, models: Dict[str, Any]):
+        if current_time >= self.start_time:
+            self.active = True
+
+
 class NoiseBurstFault(BaseFault):
     """
     Noise burst fault - sensor noise suddenly increases.

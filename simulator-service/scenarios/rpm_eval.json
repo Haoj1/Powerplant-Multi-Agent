@@ -1,12 +1,12 @@
 {
   "version": "1.0",
   "name": "rpm_eval",
-  "description": "RPM out of range - setpoint drops to 2700 (min 2800)",
+  "description": "RPM out of range - setpoint drops to 2620 (min 2750)",
   "plant_id": "plant01",
   "asset_id": "pump01",
   "seed": 12345,
   "duration_sec": 120,
-  "initial_conditions": { "rpm": 2950, "valve_open_pct": 60 },
+  "initial_conditions": {"rpm": 2950, "valve_open_pct": 60},
   "faults": [],
-  "setpoints": [{ "time_sec": 5, "rpm": 2650 }]
+  "setpoints": [{"time_sec": 0, "rpm": 2400}]
 }

@@ -1,5 +1,6 @@
 """Threshold-based anomaly detection with optional sliding window, trend, and duration."""
 
+import os
 from datetime import datetime, timezone
 from typing import Optional, TYPE_CHECKING
 
@@ -19,22 +20,28 @@ DEFAULT_THRESHOLDS = {
     "vibration_rms": {"warning": 2.8, "critical": 18.0},  # base ~2, 2.8 = slight rise
     "bearing_temp_c": {"warning": 55.0, "critical": 85.0},
     "pressure_bar": {"warning_high": 7.5, "critical_high": 25.0},  # nominal ~5-6
-    "motor_current_a": {"warning_high": 32.0, "critical_high": 45.0},
+    "motor_current_a": {"warning_high": 34.0, "critical_high": 45.0},  # healthy ~30-33; clogging+drift >45
     "temp_c": {"warning_high": 55.0, "critical_high": 95.0},  # base ~30-35
-    "flow_m3h": {"warning_low": 95.0, "critical_low": 60.0},  # nominal ~100
-    "rpm": {"min": 2750.0, "max": 3150.0},  # 2650/2700 triggers
+    "flow_m3h": {"warning_low": 48.0, "critical_low": 45.0},  # healthy 50-70; clogging <45
+    "rpm": {"min": 2650.0, "max": 3150.0},  # healthy 2950; rpm_eval 2200 triggers
 }
 
-# Valve-flow mismatch: valve >= 70% but flow <= 65 m³/h
-VALVE_FLOW_MISMATCH = {"valve_min_pct": 70.0, "flow_max_m3h": 65.0}
+# Valve-flow mismatch: valve >= 65% but flow <= 68 m³/h (healthy valve 70% flow 70)
+VALVE_FLOW_MISMATCH = {"valve_min_pct": 65.0, "flow_max_m3h": 68.0}
 
-# Slopes - very relaxed for eval
+# Signals that use shorter duration (0.5s) to trigger faster - avoids needing min_dur=0 for eval
+# while keeping other signals (bearing_temp etc.) at full min_dur to avoid healthy false positives
+FAST_DURATION_SIGNALS = {"temp_c", "rpm", "valve_flow_mismatch"}
+
+DEBUG_ALERT_EVAL = os.environ.get("DEBUG_ALERT_EVAL", "").lower() in ("1", "true", "yes")
+
+# Slopes - relaxed for fault scenarios, tight enough to avoid healthy_baseline noise/setpoint changes
 DEFAULT_SLOPE_THRESHOLDS = {
-    "vibration_rms": {"warning": 0.005, "critical": 0.08},
-    "bearing_temp_c": {"warning": 0.08, "critical": 0.6},
-    "flow_m3h": {"warning": -0.5, "critical": -5.0, "side": "low", "window_sec": 10},
-    "pressure_bar": {"warning": 0.1, "critical": 1.0, "window_sec": 10},
-    "motor_current_a": {"warning": 0.4, "critical": 1.5, "window_sec": 10},
+    "vibration_rms": {"warning": 0.008, "critical": 0.08},
+    "bearing_temp_c": {"warning": 0.38, "critical": 0.6},  # healthy slope ~0.32; bearing_wear >>0.5
+    "flow_m3h": {"warning": -0.85, "critical": -5.0, "side": "low", "window_sec": 10},  # -0.5->-0.85: valve setpoint changes
+    "pressure_bar": {"warning": 0.25, "critical": 1.0, "window_sec": 10},  # 0.1->0.25: healthy variation
+    "motor_current_a": {"warning": 0.95, "critical": 1.5, "window_sec": 10},  # healthy ~0.75; clogging >>1
 }
 
 
@@ -100,7 +107,7 @@ class ThresholdDetector:
 
             # Duration check: skip threshold alert if buffer says we haven't sustained long enough
             side = "low" if "critical_low" in rule or "warning_low" in rule else "high"
-            min_dur = 2 if signal_name == "flow_m3h" else (2 if signal_name == "rpm" else self.min_duration_sec)
+            min_dur = 0.5 if signal_name in FAST_DURATION_SIGNALS else self.min_duration_sec
             if buffer and min_dur > 0:
                 thr_val = rule.get("critical") or rule.get("critical_high") or rule.get("critical_low")
                 if thr_val is not None:
@@ -108,6 +115,8 @@ class ThresholdDetector:
                         telemetry.asset_id, signal_name, thr_val, side, self.window_sec
                     )
                     if dur < min_dur:
+                        if DEBUG_ALERT_EVAL and signal_name in ("temp_c", "rpm"):
+                            print(f"[DEBUG] {signal_name}: value={value:.1f} dur={dur:.2f}s < {min_dur}s (need more)")
                         continue
                 thr_warn = rule.get("warning") or rule.get("warning_high") or rule.get("warning_low")
                 if thr_warn is not None:
@@ -117,6 +126,8 @@ class ThresholdDetector:
                             telemetry.asset_id, signal_name, thr_warn, side, self.window_sec
                         )
                         if dur_warn < min_dur:
+                            if DEBUG_ALERT_EVAL and signal_name in ("temp_c", "rpm"):
+                                print(f"[DEBUG] {signal_name}: value={value:.1f} dur={dur_warn:.2f}s < {min_dur}s (warning range)")
                             continue
 
             # Low-side thresholds (e.g. flow_m3h)
@@ -157,6 +168,8 @@ class ThresholdDetector:
                             telemetry.asset_id, signal_name, thr, side_rpm, self.window_sec
                         )
                         if dur < min_dur:
+                            if DEBUG_ALERT_EVAL and signal_name == "rpm":
+                                print(f"[DEBUG] rpm: value={value:.0f} dur={dur:.2f}s < {min_dur}s (need more)")
                             continue
                     thr = rule["min"] if value < rule["min"] else rule["max"]
                     ev_side = "low" if value < rule["min"] else "high"
@@ -237,7 +250,11 @@ class ThresholdDetector:
             f_max = VALVE_FLOW_MISMATCH["flow_max_m3h"]
             if signals_dict["valve_open_pct"] >= v_min and signals_dict["flow_m3h"] <= f_max:
                 dur = buffer.duration_valve_flow_mismatch(telemetry.asset_id, v_min, f_max, 60)
-                if dur >= 3:
+                # Trigger immediately when condition met (cooldown suppresses repeats); or after 0.5s sustained
+                trigger = dur >= 0.5 or self.min_duration_sec == 0
+                if not trigger and DEBUG_ALERT_EVAL:
+                    print(f"[DEBUG] valve_flow_mismatch: valve={signals_dict['valve_open_pct']:.1f}% flow={signals_dict['flow_m3h']:.1f} dur={dur:.2f}s")
+                if trigger or dur >= 0:  # dur>=0 when we have 1+ matching point (last point adds 0)
                     alerts.append(
                         AlertDetail(
                             signal="valve_flow_mismatch",

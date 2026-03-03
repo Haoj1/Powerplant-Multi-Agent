@@ -1,0 +1,363 @@
+{
+  "scenario_runs": 234,
+  "detection_count": 105,
+  "detection_rate": 0.4487,
+  "avg_latency_sec": 0.0,
+  "detection_by_signal": {
+    "vibration_rms": {
+      "expected_runs": 36,
+      "hits": 18,
+      "detection_rate": 0.5,
+      "avg_latency_sec": 0.01
+    },
+    "bearing_temp_c": {
+      "expected_runs": 18,
+      "hits": 18,
+      "detection_rate": 1.0,
+      "avg_latency_sec": 0.85
+    },
+    "motor_current_a": {
+      "expected_runs": 18,
+      "hits": 18,
+      "detection_rate": 1.0,
+      "avg_latency_sec": 0.0
+    },
+    "pressure_bar": {
+      "expected_runs": 18,
+      "hits": 18,
+      "detection_rate": 1.0,
+      "avg_latency_sec": 0.0
+    },
+    "flow_m3h": {
+      "expected_runs": 18,
+      "hits": 18,
+      "detection_rate": 1.0,
+      "avg_latency_sec": 0.0
+    },
+    "valve_flow_mismatch": {
+      "expected_runs": 18,
+      "hits": 18,
+      "detection_rate": 1.0,
+      "avg_latency_sec": 0.0
+    },
+    "temp_c": {
+      "expected_runs": 18,
+      "hits": 18,
+      "detection_rate": 1.0,
+      "avg_latency_sec": 0.0
+    },
+    "rpm": {
+      "expected_runs": 18,
+      "hits": 18,
+      "detection_rate": 1.0,
+      "avg_latency_sec": 0.0
+    }
+  },
+  "scenario_matrix": {
+    "healthy_baseline": {
+      "expected_root_cause": "none",
+      "runs": 126,
+      "runs_with_alerts": 15,
+      "detection_rate": 0.119,
+      "avg_latency_sec": 0.01,
+      "diagnosis_count": 7,
+      "diagnosis_correct": 6,
+      "diagnosis_accuracy": 0.8571,
+      "avg_steps": 8.29,
+      "min_steps": 7,
+      "max_steps": 10,
+      "avg_total_tokens": 35493.57,
+      "min_tokens": 26837,
+      "max_tokens": 46703
+    },
+    "bearing_wear_eval": {
+      "expected_root_cause": "bearing_wear",
+      "runs": 18,
+      "runs_with_alerts": 18,
+      "detection_rate": 1.0,
+      "avg_latency_sec": 0.01,
+      "diagnosis_count": 47,
+      "diagnosis_correct": 47,
+      "diagnosis_accuracy": 1.0,
+      "avg_steps": 7.23,
+      "min_steps": 6,
+      "max_steps": 9,
+      "avg_total_tokens": 28391.15,
+      "min_tokens": 18586,
+      "max_tokens": 43642
+    },
+    "clogging_eval": {
+      "expected_root_cause": "clogging",
+      "runs": 18,
+      "runs_with_alerts": 18,
+      "detection_rate": 1.0,
+      "avg_latency_sec": 0.0,
+      "diagnosis_count": 11,
+      "diagnosis_correct": 7,
+      "diagnosis_accuracy": 0.6364,
+      "avg_steps": 9.45,
+      "min_steps": 8,
+      "max_steps": 11,
+      "avg_total_tokens": 54602.45,
+      "min_tokens": 38125,
+      "max_tokens": 72330
+    },
+    "valve_flow_mismatch_eval": {
+      "expected_root_cause": "valve_stuck",
+      "runs": 18,
+      "runs_with_alerts": 18,
+      "detection_rate": 1.0,
+      "avg_latency_sec": 0.0,
+      "diagnosis_count": 16,
+      "diagnosis_correct": 16,
+      "diagnosis_accuracy": 1.0,
+      "avg_steps": 8.94,
+      "min_steps": 8,
+      "max_steps": 10,
+      "avg_total_tokens": 47316.44,
+      "min_tokens": 38315,
+      "max_tokens": 60841
+    },
+    "sensor_drift_eval_temp_override": {
+      "expected_root_cause": "sensor_override",
+      "runs": 18,
+      "runs_with_alerts": 18,
+      "detection_rate": 1.0,
+      "avg_latency_sec": 0.0,
+      "diagnosis_count": 18,
+      "diagnosis_correct": 13,
+      "diagnosis_accuracy": 0.7222,
+      "avg_steps": 9.67,
+      "min_steps": 8,
+      "max_steps": 12,
+      "avg_total_tokens": 52782.0,
+      "min_tokens": 37394,
+      "max_tokens": 78017
+    },
+    "rpm_eval_override": {
+      "expected_root_cause": "sensor_override",
+      "runs": 18,
+      "runs_with_alerts": 18,
+      "detection_rate": 1.0,
+      "avg_latency_sec": 0.0,
+      "diagnosis_count": 18,
+      "diagnosis_correct": 8,
+      "diagnosis_accuracy": 0.4444,
+      "avg_steps": 9.17,
+      "min_steps": 8,
+      "max_steps": 11,
+      "avg_total_tokens": 48996.72,
+      "min_tokens": 37369,
+      "max_tokens": 71539
+    },
+    "noise_burst_eval": {
+      "expected_root_cause": "noise_burst",
+      "runs": 18,
+      "runs_with_alerts": 0,
+      "detection_rate": 0.0,
+      "avg_latency_sec": null,
+      "diagnosis_count": 0,
+      "diagnosis_correct": 0,
+      "diagnosis_accuracy": null,
+      "avg_steps": null,
+      "min_steps": null,
+      "max_steps": null,
+      "avg_total_tokens": null,
+      "min_tokens": null,
+      "max_tokens": null
+    }
+  },
+  "healthy_runs": 126,
+  "healthy_runs_with_alerts": 15,
+  "healthy_false_positive_rate": 0.119,
+  "healthy_alerts_by_signal": {
+    "bearing_temp_c": 15
+  },
+  "diagnosis_count": 117,
+  "diagnosis_correct": 97,
+  "diagnosis_accuracy": 0.8291,
+  "diagnosis_by_root_cause": {
+    "_all": {
+      "count": 117,
+      "correct": 97,
+      "accuracy": 0.8291,
+      "avg_confidence": 0.86,
+      "avg_confidence_correct": 0.87,
+      "avg_confidence_incorrect": 0.85,
+      "avg_steps": 8.41,
+      "avg_steps_correct": 8.21,
+      "avg_steps_incorrect": 9.4,
+      "min_steps": 6,
+      "max_steps": 12,
+      "avg_total_tokens": 40790.99,
+      "avg_tokens_correct": 38656.86,
+      "avg_tokens_incorrect": 51141.55,
+      "min_tokens": 18586,
+      "max_tokens": 78017,
+      "avg_prompt_tokens": 39474.61,
+      "avg_completion_tokens": 1316.38,
+      "avg_tokens_per_step": 4850.15
+    },
+    "bearing_wear": {
+      "count": 47,
+      "correct": 47,
+      "accuracy": 1.0,
+      "avg_confidence": 0.92,
+      "avg_confidence_correct": 0.92,
+      "avg_confidence_incorrect": null,
+      "avg_steps": 7.23,
+      "avg_steps_correct": 7.23,
+      "avg_steps_incorrect": null,
+      "min_steps": 6,
+      "max_steps": 9,
+      "avg_total_tokens": 28391.15,
+      "avg_tokens_correct": 28391.15,
+      "avg_tokens_incorrect": null,
+      "min_tokens": 18586,
+      "max_tokens": 43642,
+      "avg_prompt_tokens": 27333.64,
+      "avg_completion_tokens": 1057.51,
+      "avg_tokens_per_step": 3924.66
+    },
+    "clogging": {
+      "count": 11,
+      "correct": 7,
+      "accuracy": 0.6364,
+      "avg_confidence": 0.8,
+      "avg_confidence_correct": 0.81,
+      "avg_confidence_incorrect": 0.8,
+      "avg_steps": 9.45,
+      "avg_steps_correct": 9.29,
+      "avg_steps_incorrect": 9.75,
+      "min_steps": 8,
+      "max_steps": 11,
+      "avg_total_tokens": 54602.45,
+      "avg_tokens_correct": 52770.0,
+      "avg_tokens_incorrect": 57809.25,
+      "min_tokens": 38125,
+      "max_tokens": 72330,
+      "avg_prompt_tokens": 52860.18,
+      "avg_completion_tokens": 1742.27,
+      "avg_tokens_per_step": 5775.26
+    },
+    "valve_stuck": {
+      "count": 16,
+      "correct": 16,
+      "accuracy": 1.0,
+      "avg_confidence": 0.81,
+      "avg_confidence_correct": 0.81,
+      "avg_confidence_incorrect": null,
+      "avg_steps": 8.94,
+      "avg_steps_correct": 8.94,
+      "avg_steps_incorrect": null,
+      "min_steps": 8,
+      "max_steps": 10,
+      "avg_total_tokens": 47316.44,
+      "avg_tokens_correct": 47316.44,
+      "avg_tokens_incorrect": null,
+      "min_tokens": 38315,
+      "max_tokens": 60841,
+      "avg_prompt_tokens": 45816.19,
+      "avg_completion_tokens": 1500.25,
+      "avg_tokens_per_step": 5294.15
+    },
+    "sensor_override": {
+      "count": 36,
+      "correct": 21,
+      "accuracy": 0.5833,
+      "avg_confidence": 0.85,
+      "avg_confidence_correct": 0.84,
+      "avg_confidence_incorrect": 0.86,
+      "avg_steps": 9.42,
+      "avg_steps_correct": 9.48,
+      "avg_steps_incorrect": 9.33,
+      "min_steps": 8,
+      "max_steps": 12,
+      "avg_total_tokens": 50889.36,
+      "avg_tokens_correct": 51480.48,
+      "avg_tokens_incorrect": 50061.8,
+      "min_tokens": 37369,
+      "max_tokens": 78017,
+      "avg_prompt_tokens": 49438.61,
+      "avg_completion_tokens": 1450.75,
+      "avg_tokens_per_step": 5404.18
+    },
+    "none": {
+      "count": 7,
+      "correct": 6,
+      "accuracy": 0.8571,
+      "avg_confidence": 0.8,
+      "avg_confidence_correct": 0.79,
+      "avg_confidence_incorrect": 0.82,
+      "avg_steps": 8.29,
+      "avg_steps_correct": 8.17,
+      "avg_steps_incorrect": 9.0,
+      "min_steps": 7,
+      "max_steps": 10,
+      "avg_total_tokens": 35493.57,
+      "avg_tokens_correct": 34631.33,
+      "avg_tokens_incorrect": 40667.0,
+      "min_tokens": 26837,
+      "max_tokens": 46703,
+      "avg_prompt_tokens": 34219.57,
+      "avg_completion_tokens": 1274.0,
+      "avg_tokens_per_step": 4283.71
+    }
+  },
+  "latency_by_root_cause": {
+    "bearing_wear": {
+      "count": 18,
+      "avg_latency_sec": 0.01,
+      "min_latency_sec": 0.0,
+      "max_latency_sec": 0.01
+    },
+    "clogging": {
+      "count": 18,
+      "avg_latency_sec": 0.0,
+      "min_latency_sec": 0.0,
+      "max_latency_sec": 0.01
+    },
+    "valve_stuck": {
+      "count": 18,
+      "avg_latency_sec": 0.0,
+      "min_latency_sec": 0.0,
+      "max_latency_sec": 0.01
+    },
+    "sensor_override": {
+      "count": 36,
+      "avg_latency_sec": 0.0,
+      "min_latency_sec": 0.0,
+      "max_latency_sec": 0.02
+    },
+    "none": {
+      "count": 15,
+      "avg_latency_sec": 0.01,
+      "min_latency_sec": 0.0,
+      "max_latency_sec": 0.01
+    }
+  },
+  "confusion_matrix": {
+    "bearing_wear": {
+      "bearing_wear": 47
+    },
+    "clogging": {
+      "valve_stuck": 4,
+      "bearing_wear": 4,
+      "clogging": 3
+    },
+    "valve_stuck": {
+      "clogging": 5,
+      "valve_stuck": 11
+    },
+    "sensor_override": {
+      "sensor_drift": 14,
+      "bearing_wear": 11,
+      "clogging": 8,
+      "valve_stuck": 3
+    },
+    "none": {
+      "bearing_wear": 6,
+      "clogging": 1
+    }
+  }
+}

@@ -145,6 +145,7 @@ def simulation_loop(asset_id: str):
         last_vision_time[asset_id] = 0.0
     
     last_db_telemetry_time = -1.0
+    last_debug_log_time = -1.0
 
     while running.get(asset_id, False) and executor:
         try:
@@ -184,6 +185,15 @@ def simulation_loop(asset_id: str):
                     )
                 except Exception as e:
                     print(f"Warning: DB telemetry write error: {e}")
+
+            # Debug: log temp/rpm/fault every 10s
+            s = telemetry.signals
+            t = telemetry.truth
+            fault_val = t.fault.value if hasattr(t.fault, "value") else str(t.fault)
+            if current_sim_time[asset_id] - last_debug_log_time >= 10.0:
+                last_debug_log_time = current_sim_time[asset_id]
+                scenario_name = executor.scenario.get("name", "?")
+                print(f"[Simulator] {scenario_name} sim_t={current_sim_time[asset_id]:.0f}s temp={s.temp_c:.1f} rpm={s.rpm:.0f} fault={fault_val}")
 
             # Enqueue vision work for main thread (macOS: PyVista/VTK must run on main thread)
             if (renderer and vision_publisher and

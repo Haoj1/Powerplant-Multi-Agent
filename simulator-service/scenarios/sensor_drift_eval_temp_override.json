@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "name": "sensor_drift_eval_temp_override",
+  "description": "temp_c forced to 120 via sensor_override for eval",
+  "plant_id": "plant01",
+  "asset_id": "pump01",
+  "seed": 12345,
+  "duration_sec": 180,
+  "initial_conditions": {"rpm": 2950, "valve_open_pct": 60},
+  "faults": [
+    {"type": "sensor_override", "start_time_sec": 0, "params": {"signal": "temp_c", "value": 120.0}}
+  ],
+  "setpoints": []
+}

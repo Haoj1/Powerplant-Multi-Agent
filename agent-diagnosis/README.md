@@ -28,6 +28,16 @@ uvicorn agent-diagnosis.main:app --host 0.0.0.0 --port 8003
 - Agent A running and publishing alerts
 - SQLite DB initialized (`python scripts/init_db.py`)
 - LLM API: Set `DEEPSEEK_API_KEY` and `DEEPSEEK_BASE_URL` in `.env`, or `OPENAI_API_KEY` for OpenAI
+- Optional: Kafka broker for diagnosis queue (`KAFKA_BOOTSTRAP_SERVERS` in `.env`)
+
+## Kafka Queue (optional)
+
+When `KAFKA_BOOTSTRAP_SERVERS` is set (e.g. `localhost:9092`), Agent B uses Kafka to queue diagnosis requests:
+
+- MQTT alerts → produce to `diagnosis-queue` topic (per-fault cooldown: same asset+signals won't queue again for 60s)
+- Consumer worker runs diagnosis → publish to MQTT + DB
+
+Without Kafka, sync mode: per-fault cooldown 60s, run diagnosis directly in MQTT callback.
 
 ## Rules
 

@@ -97,7 +97,7 @@ def run_diagnosis(alert_payload: dict) -> tuple[Optional[DiagnosisReport], dict]
     Returns (DiagnosisReport or None on failure, eval_metadata).
     eval_metadata: {recursion_limit, total_tokens, prompt_tokens, completion_tokens}
     """
-    from langchain_core.messages import HumanMessage, SystemMessage
+    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
     settings = get_settings()
     recursion_limit = getattr(settings, "diagnosis_recursion_limit", 40) or 40
     config = {"recursion_limit": recursion_limit}
@@ -127,7 +127,10 @@ def run_diagnosis(alert_payload: dict) -> tuple[Optional[DiagnosisReport], dict]
 
     if not result or "messages" not in result:
         return None, eval_metadata
-    last_msg = result["messages"][-1]
+    # Count actual ReAct steps: number of AIMessage (agent turns)
+    msgs = result["messages"]
+    eval_metadata["actual_steps"] = sum(1 for m in msgs if isinstance(m, AIMessage))
+    last_msg = msgs[-1]
     content = getattr(last_msg, "content", "") or ""
     parsed = _parse_final_answer(content)
     if not parsed:

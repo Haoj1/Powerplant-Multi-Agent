@@ -25,9 +25,10 @@ def _ensure_dir():
     _db_path().parent.mkdir(parents=True, exist_ok=True)
 
 
-def get_connection() -> sqlite3.Connection:
+def get_connection(timeout: float = 5.0) -> sqlite3.Connection:
+    """Connect to DB. timeout=seconds to wait for lock (default 5); avoids indefinite hang if another process holds lock."""
     _ensure_dir()
-    return sqlite3.connect(str(_db_path()))
+    return sqlite3.connect(str(_db_path()), timeout=timeout)
 
 
 def insert_telemetry(
@@ -104,24 +105,25 @@ def insert_diagnosis(
     evidence: Optional[List[Dict[str, Any]]] = None,
     alert_id: Optional[int] = None,
     recursion_limit: Optional[int] = None,
+    actual_steps: Optional[int] = None,
     total_tokens: Optional[int] = None,
     prompt_tokens: Optional[int] = None,
     completion_tokens: Optional[int] = None,
 ) -> Optional[int]:
     """Insert diagnosis and return the inserted row id (for Agent C linkage).
-    Eval params (recursion_limit, total_tokens, etc.) are optional for eval tracking."""
+    Eval params (recursion_limit, actual_steps, total_tokens, etc.) are optional for eval tracking."""
     with _lock:
         conn = get_connection()
         try:
             conn.execute(
-                """INSERT INTO diagnosis (ts, plant_id, asset_id, root_cause, confidence, impact, recommended_actions, evidence, alert_id, recursion_limit, total_tokens, prompt_tokens, completion_tokens)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                """INSERT INTO diagnosis (ts, plant_id, asset_id, root_cause, confidence, impact, recommended_actions, evidence, alert_id, recursion_limit, actual_steps, total_tokens, prompt_tokens, completion_tokens)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     ts, plant_id, asset_id, root_cause, confidence, impact,
                     json.dumps(recommended_actions) if recommended_actions else None,
                     json.dumps(evidence) if evidence else None,
                     alert_id,
-                    recursion_limit, total_tokens, prompt_tokens, completion_tokens,
+                    recursion_limit, actual_steps, total_tokens, prompt_tokens, completion_tokens,
                 ),
             )
             row_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
@@ -365,6 +367,13 @@ def query_telemetry_window(
             conn.close()
 
 
+def _normalize_ts_for_query(ts: str) -> str:
+    """Normalize timestamp for SQLite string comparison. DB stores '2026-03-03 04:39:46.xxx+00:00'."""
+    if "T" in ts:
+        return ts.replace("T", " ", 1)
+    return ts
+
+
 def query_alerts(
     asset_id: str,
     limit: int = 20,
@@ -372,6 +381,10 @@ def query_alerts(
     until_ts: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Query recent alerts for an asset, optionally in [since_ts, until_ts]. Returns list of dicts."""
+    if since_ts:
+        since_ts = _normalize_ts_for_query(since_ts)
+    if until_ts:
+        until_ts = _normalize_ts_for_query(until_ts)
     with _lock:
         conn = get_connection()
         try:
@@ -405,6 +418,17 @@ def query_alerts(
             conn.close()
 
 
+def count_diagnosis() -> int:
+    """Return total count of diagnosis rows in DB."""
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.execute("SELECT COUNT(*) FROM diagnosis")
+            return cur.fetchone()[0]
+        finally:
+            conn.close()
+
+
 def get_diagnosis_by_id(diagnosis_id: int) -> Optional[Dict[str, Any]]:
     """Get a single diagnosis by id."""
     with _lock:
@@ -413,7 +437,7 @@ def get_diagnosis_by_id(diagnosis_id: int) -> Optional[Dict[str, Any]]:
             cur = conn.execute(
                 """SELECT id, ts, plant_id, asset_id, root_cause, confidence, impact,
                           recommended_actions, evidence, alert_id,
-                          recursion_limit, total_tokens, prompt_tokens, completion_tokens
+                          recursion_limit, actual_steps, total_tokens, prompt_tokens, completion_tokens
                    FROM diagnosis WHERE id = ?""",
                 (diagnosis_id,),
             )
@@ -433,6 +457,117 @@ def get_diagnosis_by_id(diagnosis_id: int) -> Optional[Dict[str, Any]]:
             conn.close()
 
 
+def get_diagnoses_for_alerts_batch(
+    alerts: List[Dict[str, Any]],
+) -> Dict[int, Optional[Dict[str, Any]]]:
+    """
+    Batch-fetch diagnoses for multiple alerts in minimal DB round-trips.
+    Returns dict: alert_id -> diagnosis or None.
+    Handles both direct (diagnosis.alert_id) and sibling (same ts/asset/plant) linkage.
+    """
+    if not alerts:
+        return {}
+    ids = [a.get("id") for a in alerts if a.get("id") is not None]
+    if not ids:
+        return {}
+    out: Dict[int, Optional[Dict[str, Any]]] = {aid: None for aid in ids}
+    placeholders = ",".join("?" * len(ids))
+
+    with _lock:
+        conn = get_connection()
+        try:
+            # 1. Direct: diagnosis.alert_id IN (...)
+            cur = conn.execute(
+                f"""SELECT id, ts, plant_id, asset_id, root_cause, confidence, impact,
+                       recommended_actions, evidence, alert_id,
+                       recursion_limit, actual_steps, total_tokens, prompt_tokens, completion_tokens
+                   FROM diagnosis WHERE alert_id IN ({placeholders})""",
+                tuple(ids),
+            )
+            rows = cur.fetchall()
+            cols = [c[0] for c in cur.description]
+            for r in rows:
+                row = dict(zip(cols, r))
+                for key in ("recommended_actions", "evidence"):
+                    if row.get(key) and isinstance(row[key], str):
+                        try:
+                            row[key] = json.loads(row[key])
+                        except Exception:
+                            pass
+                out[row["alert_id"]] = row
+
+            # 2. Sibling: alerts without direct diagnosis - find by (ts, asset_id, plant_id)
+            missing = [a for a in alerts if a.get("id") is not None and out.get(a["id"]) is None]
+            seen_keys: set = set()
+            for a in missing:
+                key = (str(a.get("ts", "")), a.get("asset_id", ""), a.get("plant_id", ""))
+                if not key[0] or key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                cur = conn.execute(
+                    """SELECT d.id FROM diagnosis d
+                       JOIN alerts a ON d.alert_id = a.id
+                       WHERE a.ts = ? AND a.asset_id = ? AND a.plant_id = ? LIMIT 1""",
+                    key,
+                )
+                row = cur.fetchone()
+                if row:
+                    diag_id = row[0]
+                    cur2 = conn.execute(
+                        """SELECT id, ts, plant_id, asset_id, root_cause, confidence, impact,
+                                  recommended_actions, evidence, alert_id,
+                                  recursion_limit, actual_steps, total_tokens, prompt_tokens, completion_tokens
+                           FROM diagnosis WHERE id = ?""",
+                        (diag_id,),
+                    )
+                    r2 = cur2.fetchone()
+                    if r2:
+                        cols2 = [c[0] for c in cur2.description]
+                        d = dict(zip(cols2, r2))
+                        for k in ("recommended_actions", "evidence"):
+                            if d.get(k) and isinstance(d[k], str):
+                                try:
+                                    d[k] = json.loads(d[k])
+                                except Exception:
+                                    pass
+                        for a2 in missing:
+                            if (
+                                str(a2.get("ts", "")) == key[0]
+                                and a2.get("asset_id") == key[1]
+                                and a2.get("plant_id") == key[2]
+                            ):
+                                out[a2["id"]] = d
+        finally:
+            conn.close()
+    return out
+
+
+def get_diagnosis_for_alert(alert_id: int) -> Optional[Dict[str, Any]]:
+    """Get diagnosis for alert, including sibling alerts from same event (same ts, asset_id)."""
+    d = get_diagnosis_by_alert_id(alert_id)
+    if d:
+        return d
+    # Check sibling alerts (same event) - diagnosis may link to first alert only
+    alert = get_alert_by_id(alert_id)
+    if not alert:
+        return None
+    with _lock:
+        conn = get_connection()
+        try:
+            cur = conn.execute(
+                """SELECT d.id FROM diagnosis d
+                   JOIN alerts a ON d.alert_id = a.id
+                   WHERE a.ts = ? AND a.asset_id = ? AND a.plant_id = ? LIMIT 1""",
+                (alert["ts"], alert["asset_id"], alert["plant_id"]),
+            )
+            row = cur.fetchone()
+            if row:
+                return get_diagnosis_by_id(row[0])
+        finally:
+            conn.close()
+    return None
+
+
 def get_diagnosis_by_alert_id(alert_id: int) -> Optional[Dict[str, Any]]:
     """Get the diagnosis linked to an alert (if any)."""
     with _lock:
@@ -441,7 +576,7 @@ def get_diagnosis_by_alert_id(alert_id: int) -> Optional[Dict[str, Any]]:
             cur = conn.execute(
                 """SELECT id, ts, plant_id, asset_id, root_cause, confidence, impact,
                           recommended_actions, evidence, alert_id,
-                          recursion_limit, total_tokens, prompt_tokens, completion_tokens
+                          recursion_limit, actual_steps, total_tokens, prompt_tokens, completion_tokens
                    FROM diagnosis WHERE alert_id = ? ORDER BY ts DESC LIMIT 1""",
                 (alert_id,),
             )
@@ -481,10 +616,12 @@ def query_alerts_with_diagnosis_and_ticket_paginated(
     with _lock:
         conn = get_connection()
         try:
+            # Show diagnosis for all alerts from same event (same ts, asset_id); diagnosis links to first alert_id
             sel = """SELECT a.id as alert_id, a.ts, a.plant_id, a.asset_id, a.severity, a.signal, a.score,
                      d.id as diagnosis_id, t.id as ticket_row_id, t.ticket_id, t.url as ticket_url
                      FROM alerts a
                      LEFT JOIN diagnosis d ON d.alert_id = a.id
+                        OR (d.alert_id IN (SELECT id FROM alerts a2 WHERE a2.ts = a.ts AND a2.asset_id = a.asset_id AND a2.plant_id = a.plant_id))
                      LEFT JOIN tickets t ON t.diagnosis_id = d.id"""
             where = ""
             params: list = []

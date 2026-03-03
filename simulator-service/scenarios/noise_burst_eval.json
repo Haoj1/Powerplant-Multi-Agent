@@ -1,18 +1,12 @@
 {
   "version": "1.0",
   "name": "noise_burst_eval",
-  "description": "Vibration noise burst - can trigger vibration_rms threshold spike",
+  "description": "Vibration noise burst - triggers vibration_rms threshold spike",
   "plant_id": "plant01",
   "asset_id": "pump01",
   "seed": 12345,
   "duration_sec": 90,
   "initial_conditions": {"rpm": 2950, "valve_open_pct": 60},
-  "faults": [
-    {
-      "type": "noise_burst",
-      "start_time_sec": 5,
-      "params": {"signal": "vibration_rms", "noise_amplitude": 15.0, "duration_sec": 60}
-    }
-  ],
+  "faults": [{"type": "noise_burst", "start_time_sec": 0, "params": {"signal": "vibration_rms", "noise_amplitude": 35, "duration_sec": 85}}],
   "setpoints": []
 }

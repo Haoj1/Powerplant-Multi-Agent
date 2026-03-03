@@ -221,11 +221,12 @@ def _migrate_diagnosis_alert_id(conn):
 
 
 def _migrate_diagnosis_eval_columns(conn):
-    """Add eval columns: recursion_limit, total_tokens, prompt_tokens, completion_tokens."""
+    """Add eval columns: recursion_limit, actual_steps, total_tokens, prompt_tokens, completion_tokens."""
     cur = conn.execute("PRAGMA table_info(diagnosis)")
     cols = [row[1] for row in cur.fetchall()]
     for col, sql_type in [
         ("recursion_limit", "INTEGER"),
+        ("actual_steps", "INTEGER"),
         ("total_tokens", "INTEGER"),
         ("prompt_tokens", "INTEGER"),
         ("completion_tokens", "INTEGER"),

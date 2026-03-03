@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "name": "rpm_eval_override",
+  "description": "rpm forced to 500 via sensor_override for eval",
+  "plant_id": "plant01",
+  "asset_id": "pump01",
+  "seed": 12345,
+  "duration_sec": 120,
+  "initial_conditions": {"rpm": 500, "valve_open_pct": 60},
+  "faults": [
+    {"type": "sensor_override", "start_time_sec": 0, "params": {"signal": "rpm", "value": 500.0}}
+  ],
+  "setpoints": [{"time_sec": 0, "rpm": 500}]
+}

@@ -20,11 +20,17 @@ This project implements an end-to-end pipeline for industrial IoT asset monitori
 
 ### Technology Stack
 
-- **Backend:** Python 3.11, FastAPI, pydantic
-- **Message bus:** MQTT (Mosquitto)
-- **LLM:** LangChain, LangGraph, OpenAI/DeepSeek
-- **Frontend:** React, Vite
-- **RAG:** sqlite-vec, sentence-transformers
+| Layer | Technologies |
+|-------|--------------|
+| **Backend** | Python 3.11, FastAPI, pydantic, pydantic-settings |
+| **Message bus** | MQTT (paho-mqtt, Mosquitto), Kafka (kafka-python, optional Agent B queue) |
+| **LLM / Agents** | LangChain, LangChain-Core, LangGraph, langchain-openai (OpenAI/DeepSeek compatible) |
+| **Frontend** | React, Vite |
+| **RAG / Vector** | sqlite-vec, sentence-transformers (all-MiniLM-L6-v2) |
+| **Streaming** | sse-starlette (Agent D chat) |
+| **Numerics** | NumPy (simulator physics) |
+| **Multimodal (optional)** | pyvista (3D viz), anthropic (Claude Vision) |
+| **Eval / Charts** | matplotlib |
 
 ---
 
@@ -33,12 +39,23 @@ This project implements an end-to-end pipeline for industrial IoT asset monitori
 | Component | Role |
 |-----------|------|
 | **Simulator** | Generates telemetry, injects faults (bearing_wear, clogging, valve_stuck, sensor_drift), publishes to MQTT |
-| **Agent A (Monitor)** | Subscribes to telemetry, sliding-window anomaly detection (Z-score), publishes alerts |
+| **Agent A (Monitor)** | Subscribes to telemetry, threshold + slope + duration anomaly detection, publishes alerts |
 | **Agent B (Diagnosis)** | Subscribes to alerts, rule-based + LLM (ReAct) root cause analysis, publishes diagnoses |
 | **Agent C (Ticket)** | Subscribes to diagnoses, creates tickets (GitHub Issues or local), queues for review |
 | **Agent D (Review)** | Human review interface, approve/reject/edit, optional Salesforce Case, chat assistant with RAG |
 
 All agents communicate via **MQTT** (pub/sub). Each agent is stateless and scalable.
+
+### Fault Types (Simulator)
+
+| Fault | Physical Effect | Typical Alerts |
+|-------|-----------------|----------------|
+| `bearing_wear` | Vibration ↑, bearing temp ↑ | vibration_rms, bearing_temp_c |
+| `clogging` | Flow ↓, pressure ↑, motor current ↑ | flow_m3h, pressure_bar, motor_current_a |
+| `valve_stuck` | Valve vs flow mismatch | valve_flow_mismatch |
+| `sensor_drift` | Single-signal drift | temp_c, rpm, etc. |
+| `sensor_override` | Force signal to fixed value (eval) | temp_c, rpm |
+| `noise_burst` | Transient spike | vibration_rms |
 
 ---
 
@@ -69,18 +86,19 @@ All agents communicate via **MQTT** (pub/sub). Each agent is stateless and scala
 
 ```
 .
-├── simulator-service/    # Telemetry generator with fault injection
-├── agent-monitor/        # Anomaly detection agent
-├── agent-diagnosis/      # Root cause analysis agent (ReAct + rules)
-├── agent-ticket/         # Ticket creation agent
-├── agent-review/         # Human review agent + frontend dashboard
-├── shared_lib/           # Shared models, config, utilities, integrations
-├── docs/                 # Documentation
-├── logs/                 # JSONL log files
-├── mosquitto/            # MQTT broker config
-├── docker-compose.yml    # Docker services
-├── requirements.txt     # Python dependencies
-└── .env.example         # Environment variables template
+├── simulator-service/    # Telemetry generator, fault injection (bearing_wear, clogging, valve_stuck, sensor_drift, noise_burst)
+├── agent-monitor/         # Anomaly detection (threshold, slope, valve-flow mismatch)
+├── agent-diagnosis/       # ReAct agent + rules (query_rules, query_telemetry, query_alerts)
+├── agent-ticket/          # Review request creation (no LLM)
+├── agent-review/          # Human review API + React dashboard + RAG chat
+├── shared_lib/            # Models, config, db, vector indexing, integrations
+├── evaluation/            # Eval scripts, scenario_runs.jsonl, report charts
+├── docs/                  # Architecture, alerts/rules, RAG, external APIs
+├── scripts/               # run_alert_eval.py, start_all_agents.sh, use_eval_db.sh
+├── mosquitto/             # MQTT broker config
+├── docker-compose.yml     # Mosquitto
+├── requirements.txt       # Python dependencies
+└── .env.example           # LLM keys, SQLITE_PATH, Salesforce, etc.
 ```
 
 ## Quick Start
@@ -89,6 +107,7 @@ All agents communicate via **MQTT** (pub/sub). Each agent is stateless and scala
 
 - Python 3.11+
 - Docker and Docker Compose (for MQTT)
+- LLM API key (OpenAI or DeepSeek) for Agent B diagnosis and Agent D chat
 - (Optional) GitHub token for ticket creation
 - (Optional) Salesforce credentials for Case creation on approve
 
@@ -229,6 +248,28 @@ A chat assistant that can query diagnoses, alerts, rules, and feedback.
 
 ---
 
+## Evaluation and Reproducibility
+
+The system supports reproducible evaluation via fault-injected scenarios. Metrics include **alert detection rate**, **diagnosis accuracy**, and **healthy false positive rate**.
+
+### Reproduce Full Eval
+
+1. **Start services:** MQTT + Simulator + Agent A + Agent B + Agent C + Agent D
+2. **Run scenario eval:** `python scripts/run_alert_eval.py` (~10–12 min)
+3. **Compute metrics:** `python evaluation/run_evaluation.py`
+4. **Build report:** `python evaluation/build_report.py` → `evaluation/report/`
+
+See **[evaluation/README.md](evaluation/README.md)** for full instructions.
+
+### Eval Concepts
+
+| Document | Description |
+|----------|-------------|
+| [evaluation/EVAL_ALERTS.md](evaluation/EVAL_ALERTS.md) | Alert schema, detection methods (threshold/slope/valve-flow), metrics |
+| [evaluation/EVAL_DIAGNOSIS.md](evaluation/EVAL_DIAGNOSIS.md) | Diagnosis schema, ReAct flow, root causes, accuracy metrics |
+
+---
+
 ## Development Status
 
 - ✅ Phase 0: Project skeleton and shared library
@@ -238,7 +279,7 @@ A chat assistant that can query diagnoses, alerts, rules, and feedback.
 - ✅ Phase 4: Agent B (diagnosis rules engine)
 - ✅ Phase 5: Agent C (ticket creation)
 - ✅ Phase 6: Agent D (human review, Salesforce, rules management)
-- ⏳ Phase 7: Evaluation & metrics
+- ✅ Phase 7: Evaluation & metrics (run_alert_eval, run_evaluation, build_report)
 - ⏳ Phase 8: Demo polish
 
 See `TODO.md` for detailed task breakdown.
@@ -250,12 +291,30 @@ Each service exposes a `/health` endpoint for health checks.
 | Service        | Port | Notes                                      |
 |----------------|------|--------------------------------------------|
 | Simulator      | 8001 | `/scenario/load`, `/scenario/start/{asset}` |
-| Agent Monitor  | 8002 |                                            |
+| Agent Monitor  | 8002 | `/metrics` (messages_processed, alerts_generated) |
 | Agent Diagnosis| 8003 |                                            |
 | Agent Ticket   | 8004 |                                            |
 | Agent Review   | 8005 | REST API for dashboard; `/api/rules`, `/api/review`, etc. |
 
 Agent Review also serves the frontend via Vite proxy when running `npm run dev`.
+
+## MQTT Topics
+
+| Topic | Publisher | Subscriber |
+|-------|-----------|------------|
+| `telemetry/{asset_id}` | Simulator | Agent A |
+| `alerts/{asset_id}` | Agent A | Agent B |
+| `diagnosis/{asset_id}` | Agent B | Agent C |
+| `tickets/{asset_id}` | Agent C | Agent D |
+| `feedback/{asset_id}` | Agent D (on approve/reject) | — |
+
+## Further Documentation
+
+- `docs/AGENT_B_ARCHITECTURE.md` — ReAct agent, tools, rules
+- `docs/AGENT_D_ARCHITECTURE.md` — Review API, RAG chat
+- `docs/ALERTS_AND_RULES.md` — Alert thresholds, rule priorities
+- `docs/RAG_IMPLEMENTATION.md` — Vector indexing, query tools
+- `docs/EXTERNAL_API_CONFIG.md` — Salesforce, GitHub
 
 ## License
 

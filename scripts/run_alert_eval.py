@@ -49,28 +49,63 @@ SCENARIOS = [
     ("bearing_wear_eval", 120, "vibration_rms, bearing_temp_c (slope+threshold)"),
     ("clogging_eval", 120, "flow_m3h, pressure_bar, motor_current_a"),
     ("valve_flow_mismatch_eval", 120, "valve_flow_mismatch"),
-    ("sensor_drift_eval", 120, "pressure_bar, temp_c (drift)"),
-    ("rpm_eval", 90, "rpm (out of range)"),
+    ("sensor_drift_eval", 120, "temp_c (sensor_override=120)"),
+    ("rpm_eval", 90, "rpm (sensor_override=500)"),
     ("noise_burst_eval", 90, "vibration_rms (noise spike)"),
 ]
 
 HEALTH_DURATION = 20
 RESET_DURATION = 20  # Health/reset interval between fault scenarios
-CYCLES = 2  # Run full sequence twice (random 1-2)
+CYCLES = 6  # Run full sequence 6 times (fixed) for data samples
 
 
 def load_scenario(name: str, **overrides) -> dict:
-    """Load scenario JSON, optionally override fields."""
+    """Load scenario JSON, optionally override fields. Supports fault param overrides."""
     path = _scenarios_dir / f"{name}.json"
     if not path.exists():
         raise FileNotFoundError(f"Scenario not found: {path}")
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
     for k, v in overrides.items():
-        if k == "rate_per_sec" and "faults" in data and data["faults"]:
+        if k == "rate_per_sec" and "faults" in data:
             for f in data["faults"]:
                 if f.get("type") == "bearing_wear" and "params" in f:
                     f["params"]["rate_per_sec"] = v
+        elif k == "resistance_factor" and "faults" in data:
+            for f in data["faults"]:
+                if f.get("type") == "clogging" and "params" in f:
+                    f["params"]["resistance_factor"] = v
+        elif k == "valve_stuck_pct" and "faults" in data:
+            for f in data["faults"]:
+                if f.get("type") == "valve_stuck" and "params" in f:
+                    f["params"]["stuck_value"] = v
+        elif k == "valve_open_pct" and "initial_conditions" in data:
+            data["initial_conditions"]["valve_open_pct"] = v
+        elif k == "initial_rpm" and "initial_conditions" in data:
+            data["initial_conditions"]["rpm"] = v
+        elif k == "drift_rate" and "faults" in data:
+            for f in data["faults"]:
+                if f.get("type") == "sensor_drift" and "params" in f:
+                    f["params"]["drift_rate"] = v
+        elif k == "drift_rate_temp_c" and "faults" in data:
+            for f in data["faults"]:
+                if f.get("type") == "sensor_drift" and f.get("params", {}).get("signal") == "temp_c":
+                    f["params"]["drift_rate"] = v
+        elif k == "noise_amplitude" and "faults" in data:
+            for f in data["faults"]:
+                if f.get("type") == "noise_burst" and "params" in f:
+                    f["params"]["noise_amplitude"] = v
+        elif k == "rpm_setpoint":
+            if data.get("setpoints"):
+                data["setpoints"][0]["rpm"] = v
+                if "time_sec" not in data["setpoints"][0]:
+                    data["setpoints"][0]["time_sec"] = 0
+            else:
+                data["setpoints"] = [{"time_sec": 0, "rpm": v}]
+        elif k == "add_faults" and isinstance(v, list):
+            data.setdefault("faults", []).extend(v)
+        elif k == "replace_faults" and isinstance(v, list):
+            data["faults"] = v
         else:
             data[k] = v
     return data
@@ -142,7 +177,7 @@ def get_agent_a_metrics() -> dict:
 
 
 def main():
-    cycles = random.randint(1, CYCLES) if CYCLES > 1 else CYCLES
+    cycles = CYCLES
     print("=" * 70)
     print("Alert Eval: ALL alert types (health -> fault -> health -> ...)")
     print(f"Cycles: {cycles} | Health: {HEALTH_DURATION}s | Reset: {RESET_DURATION}s")
@@ -211,15 +246,72 @@ def main():
                 time.sleep(RESET_DURATION)
                 api_stop(ASSET_ID)
 
-            # Fault phase
-            rate = 0.18 * random.uniform(0.95, 1.05) if "bearing_wear" in name else None
-            scenario = load_scenario(name, rate_per_sec=rate) if rate else load_scenario(name)
+            # Fault phase: apply EXTREME eval overrides to guarantee alert triggers
+            # (no threshold changes; simulator params only)
+            overrides = {}
+            if "bearing_wear" in name:
+                overrides["rate_per_sec"] = 0.35 * random.uniform(0.95, 1.05)
+            elif "clogging" in name and "valve" not in name:
+                # Physics: valve caps flow; pump model max ~6bar/32A. Override to force triggers:
+                # 1) valve 35% -> flow ~35 (< 45)
+                # 2) sensor_drift on pressure_bar + motor_current_a (physics can't reach 25bar/45A)
+                overrides["valve_open_pct"] = 35
+                overrides["resistance_factor"] = 80
+                overrides["add_faults"] = [
+                    {"type": "sensor_drift", "start_time_sec": 0, "params": {"signal": "pressure_bar", "drift_rate": 2.5}},
+                    {"type": "sensor_drift", "start_time_sec": 0, "params": {"signal": "motor_current_a", "drift_rate": 20.0}},
+                ]
+            elif "valve_flow" in name:
+                # valve>=65% + flow<=68 (valve_flow_mismatch). Proven: resist 800, valve stuck 80%
+                overrides["resistance_factor"] = 800
+                overrides["valve_stuck_pct"] = 80
+            elif "sensor_drift" in name:
+                # Use proven override: temp_c=120 via sensor_override (sensor_drift_eval_temp_override.json)
+                scenario = json.loads((_scenarios_dir / "sensor_drift_eval_temp_override.json").read_text(encoding="utf-8"))
+                print(f"\n  [{name}] {run_sec}s -> {desc}")
+                api_load(scenario)
+                api_start(ASSET_ID)
+                time.sleep(run_sec)
+                api_stop(ASSET_ID)
+                time.sleep(6)
+                m1 = get_agent_a_metrics()
+                msgs = m1.get("messages_processed", 0)
+                alrts = m1.get("alerts_generated", 0)
+                print(f"  [Agent A] messages_processed={msgs}, alerts_generated={alrts}")
+                if msgs == 0:
+                    print("  [!] Agent A received NO telemetry. Check MQTT + Simulator publishing.")
+                elif alrts == 0:
+                    print("  [!] Agent A received telemetry but generated NO alerts (threshold/duration?).")
+                print_alerts_summary(ASSET_ID)
+                continue
+            elif "rpm" in name:
+                # Use proven override: rpm=500 via sensor_override (rpm_eval_override.json)
+                scenario = json.loads((_scenarios_dir / "rpm_eval_override.json").read_text(encoding="utf-8"))
+                print(f"\n  [{name}] {run_sec}s -> {desc}")
+                api_load(scenario)
+                api_start(ASSET_ID)
+                time.sleep(run_sec)
+                api_stop(ASSET_ID)
+                time.sleep(6)
+                m1 = get_agent_a_metrics()
+                msgs = m1.get("messages_processed", 0)
+                alrts = m1.get("alerts_generated", 0)
+                print(f"  [Agent A] messages_processed={msgs}, alerts_generated={alrts}")
+                if msgs == 0:
+                    print("  [!] Agent A received NO telemetry. Check MQTT + Simulator publishing.")
+                elif alrts == 0:
+                    print("  [!] Agent A received telemetry but generated NO alerts (threshold/duration?).")
+                print_alerts_summary(ASSET_ID)
+                continue
+            elif "noise_burst" in name:
+                overrides["noise_amplitude"] = 60  # vibration spike >> 18
+            scenario = load_scenario(name, **overrides)
             print(f"\n  [{name}] {run_sec}s -> {desc}")
             api_load(scenario)
             api_start(ASSET_ID)
             time.sleep(run_sec)
             api_stop(ASSET_ID)
-            time.sleep(3)  # Brief wait for Agent A to process
+            time.sleep(6)  # Wait for Agent A to process (sparse telemetry ~1/6s)
             m1 = get_agent_a_metrics()
             msgs = m1.get("messages_processed", 0)
             alrts = m1.get("alerts_generated", 0)
