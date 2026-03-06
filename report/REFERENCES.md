@@ -80,6 +80,18 @@ Use these references in the order they first appear in the text. In-text citatio
 
 ---
 
+## 10. Vision Language Models (VLM)
+
+[21] H. Liu, C. Li, Q. Wu, and Y. J. Lee, "Visual instruction tuning," in *Proc. Adv. Neural Inf. Process. Syst. (NeurIPS)*, vol. 36, 2023.
+
+[22] J. Li, D. Li, C. Xiong, and S. Hoi, "BLIP: Bootstrapping language-image pre-training for unified vision-language understanding and generation," in *Proc. Int. Conf. Mach. Learn. (ICML)*, 2022, pp. 12888–12900.
+
+[23] OpenAI, "GPT-4V(ision) system card," OpenAI, 2023. [Online]. Available: https://openai.com/index/gpt-4v-system-card
+
+[24] D. Zhang, Y. Yu, J. Dong, C. Li, D. Su, C. Chu, and D. Yu, "MM-LLMs: Recent advances in multimodal large language models," in *Proc. Assoc. Comput. Linguist. (ACL) Findings*, 2024, pp. 5506–5527.
+
+---
+
 ## Usage Notes
 
 - **IEEE in-text:** Citations appear as [1], [2], [3] in order of first appearance.
@@ -94,8 +106,10 @@ Use these references in the order they first appear in the text. In-text citatio
 
 | Chapter | Suggested References |
 |---------|----------------------|
-| Ch. 2 Background | [1]–[4], [6], [8], [11]–[13], [15] |
-| Ch. 3 System Design | [13], [14] |
-| Ch. 4 Implementation | [8], [17] |
+| Ch. 2 Background | [1]–[4], [6], [8], [11]–[13], [15], [21] |
+| Ch. 3 System Design | [13], [14], [21], [23] |
+| Ch. 4 Implementation | [8], [17], [21], [23] |
 | Ch. 5 Evaluation | [4], [6], [7] |
-| Ch. 6 Conclusion | [1], [8], [15] |
+| Ch. 6 Conclusion | [1], [8], [15], [21], [24] |
+
+**VLM usage in project:** Agent D chat (`analyze_image_with_vlm`), rules creation (flowchart → VLM → structured rule), optional 3D visualization analysis. Cite [21]–[24] in System Design (3.9 Agent D), Implementation (4.5), and Future Work (6.2).

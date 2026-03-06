@@ -7,7 +7,7 @@
     body { font-family: system-ui, sans-serif; max-width: 1200px; margin: 0 auto; padding: 24px; background: #f5f5f5; }
     h1 { color: #2c3e50; }
     h2 { color: #34495e; margin-top: 32px; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 24px 0; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0; }
     .kpi { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
     .kpi .val { font-size: 28px; font-weight: bold; color: #3498db; }
     .kpi .label { font-size: 12px; color: #7f8c8d; margin-top: 4px; }
@@ -23,10 +23,12 @@
   <p>Multi-Agent Powerplant Monitoring System</p>
 
   <div class="kpi-grid">
-    <div class="kpi"><div class="val">234</div><div class="label">Scenario Runs</div></div>
+    <div class="kpi"><div class="val">390</div><div class="label">Scenario Runs</div></div>
     <div class="kpi"><div class="val">44.9%</div><div class="label">Alert Detection Rate</div></div>
-    <div class="kpi"><div class="val">82.9%</div><div class="label">Diagnosis Accuracy</div></div>
+    <div class="kpi"><div class="val">81.1%</div><div class="label">Diagnosis Accuracy</div></div>
     <div class="kpi"><div class="val">11.9%</div><div class="label">Healthy False Positive</div></div>
+    <div class="kpi"><div class="val">85.9%</div><div class="label">Alert Accuracy (TP+TN)/total</div></div>
+    <div class="kpi"><div class="val">83.3%</div><div class="label">Fault Scenario Detection (excl. healthy)</div></div>
   </div>
   <div class="chart"><h2>Confusion Matrix</h2><img src="06_confusion_matrix.png" alt="Confusion Matrix" /></div>
   <div class="chart"><h2>Correct vs Incorrect</h2><img src="04_correct_vs_incorrect.png" alt="Correct vs Incorrect" /></div>
@@ -39,13 +41,13 @@
   <h2>Scenario Matrix (Table)</h2>
   <table>
     <tr><th>Scenario</th><th>Runs</th><th>Detection Rate</th><th>Diagnosis Accuracy</th><th>Avg Steps</th><th>Avg Tokens</th></tr>
-    <tr><td>healthy_baseline</td><td>126</td><td>11.9%</td><td>85.7%</td><td>8.3</td><td>35.5k</td></tr>
-    <tr><td>bearing_wear_eval</td><td>18</td><td>100.0%</td><td>100.0%</td><td>7.2</td><td>28.4k</td></tr>
-    <tr><td>clogging_eval</td><td>18</td><td>100.0%</td><td>63.6%</td><td>9.4</td><td>54.6k</td></tr>
-    <tr><td>valve_flow_mismatch_eval</td><td>18</td><td>100.0%</td><td>100.0%</td><td>8.9</td><td>47.3k</td></tr>
-    <tr><td>sensor_drift_eval_temp_override</td><td>18</td><td>100.0%</td><td>72.2%</td><td>9.7</td><td>52.8k</td></tr>
-    <tr><td>rpm_eval_override</td><td>18</td><td>100.0%</td><td>44.4%</td><td>9.2</td><td>49.0k</td></tr>
-    <tr><td>noise_burst_eval</td><td>18</td><td>0.0%</td><td>-</td><td>-</td><td>-</td></tr>
+    <tr><td>healthy_baseline</td><td>210</td><td>11.9%</td><td>66.7%</td><td>8.3</td><td>36.0k</td></tr>
+    <tr><td>bearing_wear_eval</td><td>30</td><td>100.0%</td><td>100.0%</td><td>7.1</td><td>27.7k</td></tr>
+    <tr><td>clogging_eval</td><td>30</td><td>100.0%</td><td>73.7%</td><td>9.3</td><td>53.2k</td></tr>
+    <tr><td>valve_flow_mismatch_eval</td><td>30</td><td>100.0%</td><td>100.0%</td><td>8.9</td><td>47.0k</td></tr>
+    <tr><td>sensor_drift_eval_temp_override</td><td>30</td><td>100.0%</td><td>63.3%</td><td>9.6</td><td>52.6k</td></tr>
+    <tr><td>rpm_eval_override</td><td>30</td><td>100.0%</td><td>43.3%</td><td>9.3</td><td>50.5k</td></tr>
+    <tr><td>noise_burst_eval</td><td>30</td><td>0.0%</td><td>-</td><td>-</td><td>-</td></tr>
   </table>
 </body>
 </html>

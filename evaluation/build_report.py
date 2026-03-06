@@ -183,6 +183,8 @@ def chart_summary_kpis(data: dict, report_dir: Path) -> str | None:
         ("Alert Detection Rate", f"{(data.get('detection_rate') or 0)*100:.1f}%"),
         ("Diagnosis Accuracy", f"{(data.get('diagnosis_accuracy') or 0)*100:.1f}%"),
         ("Healthy False Positive", f"{(data.get('healthy_false_positive_rate') or 0)*100:.1f}%"),
+        ("Alert Accuracy (TP+TN)/total", f"{(data.get('alert_accuracy') or 0)*100:.1f}%"),
+        ("Fault Scenario Detection (excl. healthy)", f"{(data.get('fault_scenario_detection_rate') or 0)*100:.1f}%"),
     ]
     table = ax.table(
         cellText=[[k, str(v)] for k, v in kpis],
@@ -207,7 +209,7 @@ def build_html_report(data: dict, chart_paths: dict, report_dir: Path) -> Path:
     body { font-family: system-ui, sans-serif; max-width: 1200px; margin: 0 auto; padding: 24px; background: #f5f5f5; }
     h1 { color: #2c3e50; }
     h2 { color: #34495e; margin-top: 32px; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 24px 0; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0; }
     .kpi { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
     .kpi .val { font-size: 28px; font-weight: bold; color: #3498db; }
     .kpi .label { font-size: 12px; color: #7f8c8d; margin-top: 4px; }
@@ -227,6 +229,8 @@ def build_html_report(data: dict, chart_paths: dict, report_dir: Path) -> Path:
     <div class="kpi"><div class="val">""" + f"{(data.get('detection_rate') or 0)*100:.1f}%" + """</div><div class="label">Alert Detection Rate</div></div>
     <div class="kpi"><div class="val">""" + f"{(data.get('diagnosis_accuracy') or 0)*100:.1f}%" + """</div><div class="label">Diagnosis Accuracy</div></div>
     <div class="kpi"><div class="val">""" + f"{(data.get('healthy_false_positive_rate') or 0)*100:.1f}%" + """</div><div class="label">Healthy False Positive</div></div>
+    <div class="kpi"><div class="val">""" + f"{(data.get('alert_accuracy') or 0)*100:.1f}%" + """</div><div class="label">Alert Accuracy (TP+TN)/total</div></div>
+    <div class="kpi"><div class="val">""" + f"{(data.get('fault_scenario_detection_rate') or 0)*100:.1f}%" + """</div><div class="label">Fault Scenario Detection (excl. healthy)</div></div>
   </div>
 """
     for name, path in sorted(chart_paths.items()):
@@ -258,7 +262,9 @@ def build_markdown_report(data: dict, report_dir: Path) -> Path:
     md += f"- **Scenario Runs**: {data.get('scenario_runs', 0)}\n"
     md += f"- **Alert Detection Rate**: {(data.get('detection_rate') or 0)*100:.1f}%\n"
     md += f"- **Diagnosis Accuracy**: {(data.get('diagnosis_accuracy') or 0)*100:.1f}%\n"
-    md += f"- **Healthy False Positive**: {(data.get('healthy_false_positive_rate') or 0)*100:.1f}%\n\n"
+    md += f"- **Healthy False Positive**: {(data.get('healthy_false_positive_rate') or 0)*100:.1f}%\n"
+    md += f"- **Alert Accuracy (TP+TN)/total**: {(data.get('alert_accuracy') or 0)*100:.1f}%\n"
+    md += f"- **Fault Scenario Detection (excl. healthy)**: {(data.get('fault_scenario_detection_rate') or 0)*100:.1f}%\n\n"
     md += "## Scenario Matrix\n\n| Scenario | Runs | Detection | Diagnosis | Avg Steps | Avg Tokens |\n|----------|------|-----------|-----------|-----------|------------|\n"
     for name, s in (data.get("scenario_matrix") or {}).items():
         dr = f"{(s.get('detection_rate') or 0)*100:.1f}%" if s.get("detection_rate") is not None else "-"

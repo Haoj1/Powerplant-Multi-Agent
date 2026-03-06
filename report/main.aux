@@ -1,0 +1,324 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {chapter}{Abstract}{2}{chapter*.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{List of Figures}{8}{chapter*.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{List of Tables}{9}{chapter*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{Acknowledgments}{10}{chapter*.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {1}Introduction}{11}{chapter.1}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:intro}{{1}{11}{Introduction}{chapter.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {1.1}Motivation and Problem Statement}{11}{section.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {1.2}Objectives}{11}{section.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {1.3}Contributions}{12}{section.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {1.4}Report Organization}{12}{section.1.4}\protected@file@percent }
+\citation{lee2015cps,rahman2022deep,li2021intelligent}
+\citation{lee2015cps}
+\citation{rahman2022deep}
+\citation{li2021intelligent}
+\citation{chandola2009anomaly,ahmed2016survey}
+\citation{chandola2009anomaly}
+\citation{ahmed2016survey}
+\@writefile{toc}{\contentsline {chapter}{\numberline {2}Background and Related Work}{13}{chapter.2}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:background}{{2}{13}{Background and Related Work}{chapter.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.1}Industrial IoT and Asset Monitoring}{13}{section.2.1}\protected@file@percent }
+\citation{li2021intelligent}
+\citation{rahman2022deep}
+\citation{isermann2006fault,yin2012comparison}
+\citation{isermann2006fault}
+\citation{yin2012comparison}
+\@writefile{toc}{\contentsline {section}{\numberline {2.2}Anomaly Detection}{14}{section.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.3}Root Cause Analysis}{14}{section.2.3}\protected@file@percent }
+\citation{zhang2009fault}
+\citation{chen1999robust}
+\citation{yao2023react,schick2023toolformer}
+\citation{yao2023react}
+\citation{schick2023toolformer}
+\citation{yao2023tot}
+\citation{wooldridge2009multiagent,russell2020aima}
+\citation{wooldridge2009multiagent}
+\citation{russell2020aima}
+\citation{oasis2019mqtt,hussain2021mqtt}
+\citation{oasis2019mqtt}
+\citation{hussain2021mqtt}
+\@writefile{toc}{\contentsline {section}{\numberline {2.4}Multi-Agent Systems}{15}{section.2.4}\protected@file@percent }
+\citation{lewis2020rag,borgeaud2022retrieving}
+\citation{lewis2020rag}
+\citation{borgeaud2022retrieving}
+\citation{reimers2019sentence}
+\citation{sqlitevec2024}
+\citation{li2022blip,liu2023llava,zhang2024mmllms}
+\citation{li2022blip}
+\citation{liu2023llava}
+\citation{zhang2024mmllms}
+\@writefile{toc}{\contentsline {section}{\numberline {2.5}Retrieval-Augmented Generation}{16}{section.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.6}Vision Language Models}{17}{section.2.6}\protected@file@percent }
+\citation{wooldridge2009multiagent}
+\citation{oasis2019mqtt,hussain2021mqtt}
+\@writefile{toc}{\contentsline {chapter}{\numberline {3}System Design}{18}{chapter.3}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:design}{{3}{18}{System Design}{chapter.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.1}Overview}{18}{section.3.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces System architecture. Data flows left to right via MQTT pub/sub. SQLite stores telemetry, alerts, diagnosis, and feedback.}}{18}{figure.caption.6}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:architecture}{{3.1}{18}{System architecture. Data flows left to right via MQTT pub/sub. SQLite stores telemetry, alerts, diagnosis, and feedback}{figure.caption.6}{}}
+\citation{yao2023react}
+\citation{lewis2020rag}
+\@writefile{toc}{\contentsline {section}{\numberline {3.2}Architectural Background}{19}{section.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.1}Design Rationale}{19}{subsection.3.2.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3.1}{\ignorespaces Design rationale for key architectural choices.}}{20}{table.caption.7}\protected@file@percent }
+\newlabel{tab:rationale}{{3.1}{20}{Design rationale for key architectural choices}{table.caption.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.3}Communication Links}{20}{section.3.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces Complete system architecture: frontend (React), backend (Simulator + Agents A--D), message buses (MQTT, optional Kafka), database (SQLite), RAG, and optional Salesforce (Case creation on approve). HTTP for API/frontend; MQTT for streaming events; Kafka for Agent B diagnosis queue.}}{21}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:architecture_full}{{3.2}{21}{Complete system architecture: frontend (React), backend (Simulator + Agents A--D), message buses (MQTT, optional Kafka), database (SQLite), RAG, and optional Salesforce (Case creation on approve). HTTP for API/frontend; MQTT for streaming events; Kafka for Agent B diagnosis queue}{figure.caption.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.2}{\ignorespaces Communication protocols and their roles.}}{21}{table.caption.9}\protected@file@percent }
+\newlabel{tab:comm}{{3.2}{21}{Communication protocols and their roles}{table.caption.9}{}}
+\citation{yao2023react}
+\citation{lewis2020rag}
+\citation{reimers2019sentence,sqlitevec2024}
+\@writefile{toc}{\contentsline {section}{\numberline {3.4}LLM, Agent, and ReAct}{22}{section.3.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces ReAct loop: Thought $\rightarrow $ Action $\rightarrow $ Observation. The LLM reasons, calls a tool, observes the result, and iterates.}}{22}{figure.caption.10}\protected@file@percent }
+\newlabel{fig:react}{{3.3}{22}{ReAct loop: Thought $\rightarrow $ Action $\rightarrow $ Observation. The LLM reasons, calls a tool, observes the result, and iterates}{figure.caption.10}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.3}{\ignorespaces Agent B (Diagnosis) tools.}}{23}{table.caption.11}\protected@file@percent }
+\newlabel{tab:agentb}{{3.3}{23}{Agent B (Diagnosis) tools}{table.caption.11}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.5}RAG Design}{23}{section.3.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.4}{\ignorespaces RAG flow: indexing (left) and retrieval (right). Documents are embedded and stored; queries retrieve similar vectors for context.}}{23}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:rag}{{3.4}{23}{RAG flow: indexing (left) and retrieval (right). Documents are embedded and stored; queries retrieve similar vectors for context}{figure.caption.12}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.6}Simulator}{23}{section.3.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3.4}{\ignorespaces Agent D (Review) RAG and VLM tools.}}{24}{table.caption.13}\protected@file@percent }
+\newlabel{tab:agentd}{{3.4}{24}{Agent D (Review) RAG and VLM tools}{table.caption.13}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.5}{\ignorespaces Fault types and physical effects.}}{24}{table.caption.14}\protected@file@percent }
+\newlabel{tab:faults}{{3.5}{24}{Fault types and physical effects}{table.caption.14}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.7}Agent A (Monitor)}{24}{section.3.7}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.5}{\ignorespaces Agent A (Monitor) architecture: MQTT subscription $\rightarrow $ TelemetryBuffer $\rightarrow $ ThresholdDetector $\rightarrow $ MQTT publish.}}{24}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:agent_a}{{3.5}{24}{Agent A (Monitor) architecture: MQTT subscription $\rightarrow $ TelemetryBuffer $\rightarrow $ ThresholdDetector $\rightarrow $ MQTT publish}{figure.caption.15}{}}
+\citation{li2022blip,liu2023llava}
+\@writefile{toc}{\contentsline {section}{\numberline {3.8}Agent B (Diagnosis)}{25}{section.3.8}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.6}{\ignorespaces Agent B (Diagnosis) architecture: MQTT $\rightarrow $ Kafka (optional) $\rightarrow $ ReAct agent with tools $\rightarrow $ MQTT publish.}}{25}{figure.caption.16}\protected@file@percent }
+\newlabel{fig:agent_b}{{3.6}{25}{Agent B (Diagnosis) architecture: MQTT $\rightarrow $ Kafka (optional) $\rightarrow $ ReAct agent with tools $\rightarrow $ MQTT publish}{figure.caption.16}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.9}Agent C (Ticket)}{25}{section.3.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.10}Agent D (Review)}{25}{section.3.10}\protected@file@percent }
+\citation{ietf2012oauth2}
+\citation{salesforce2024rest}
+\citation{salesforce2024rest}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.7}{\ignorespaces Agent D (Review) architecture: React frontend $\rightarrow $ FastAPI; API uses SQLite, RAG, ReAct chat (SSE), review queue, and optional Salesforce Case creation on approve.}}{26}{figure.caption.17}\protected@file@percent }
+\newlabel{fig:agent_d}{{3.7}{26}{Agent D (Review) architecture: React frontend $\rightarrow $ FastAPI; API uses SQLite, RAG, ReAct chat (SSE), review queue, and optional Salesforce Case creation on approve}{figure.caption.17}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.10.1}Salesforce OAuth and Case Architecture}{26}{subsection.3.10.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.8}{\ignorespaces Salesforce OAuth and Case flow: (1) Agent D obtains access token via password or client credentials flow; (2) creates Case via REST POST on approve; (3) fetches Case picklists via Describe API for form prefill.}}{27}{figure.caption.18}\protected@file@percent }
+\newlabel{fig:salesforce_oauth}{{3.8}{27}{Salesforce OAuth and Case flow: (1) Agent D obtains access token via password or client credentials flow; (2) creates Case via REST POST on approve; (3) fetches Case picklists via Describe API for form prefill}{figure.caption.18}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.11}Message Bus and Data Schemas}{27}{section.3.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.12}Database Design}{27}{section.3.12}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3.6}{\ignorespaces Message payload schemas (key fields).}}{28}{table.caption.19}\protected@file@percent }
+\newlabel{tab:schemas}{{3.6}{28}{Message payload schemas (key fields)}{table.caption.19}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.7}{\ignorespaces MQTT topic convention.}}{28}{table.caption.20}\protected@file@percent }
+\newlabel{tab:mqtt}{{3.7}{28}{MQTT topic convention}{table.caption.20}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.8}{\ignorespaces Database tables.}}{29}{table.caption.21}\protected@file@percent }
+\newlabel{tab:db}{{3.8}{29}{Database tables}{table.caption.21}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.13}Frontend Design}{29}{section.3.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {4}Implementation}{30}{chapter.4}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:impl}{{4}{30}{Implementation}{chapter.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.1}Technology Stack}{30}{section.4.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces Technology stack by category.}}{30}{table.caption.22}\protected@file@percent }
+\newlabel{tab:tech}{{4.1}{30}{Technology stack by category}{table.caption.22}{}}
+\citation{fastapi2024}
+\citation{oasis2019mqtt}
+\citation{langchain2024}
+\citation{langgraph2024}
+\citation{yao2023react}
+\citation{sqlitevec2024}
+\citation{reimers2019sentence,reimers2024sentence}
+\citation{salesforce2024rest}
+\citation{ietf2012oauth2}
+\citation{li2022blip,liu2023llava}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.1}Backend Stack}{31}{subsection.4.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.2}Optional Components}{31}{subsection.4.1.2}\protected@file@percent }
+\citation{reeh2023physical}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.3}Frontend Stack}{32}{subsection.4.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.4}Project Structure and Configuration}{32}{subsection.4.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.2}Simulator Implementation}{32}{section.4.2}\protected@file@percent }
+\citation{reeh2023physical}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.1}Physical Models}{33}{subsection.4.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Pump Model}{33}{section*.23}\protected@file@percent }
+\newlabel{lst:pump_head}{{4.1}{33}{PumpModel.compute\_head and solve\_operating\_point (simulator-service/models/pump\_model.py)}{lstlisting.4.1}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.1}{\ignorespaces PumpModel.compute\_head and solve\_operating\_point (simulator-service/models/pump\_model.py)}}{33}{lstlisting.4.1}\protected@file@percent }
+\citation{white2016fluid}
+\@writefile{toc}{\contentsline {subsubsection}{Pipe System Model}{34}{section*.24}\protected@file@percent }
+\newlabel{lst:pipe}{{4.2}{34}{PipeSystemModel.compute\_system\_head and set\_clogging\_resistance}{lstlisting.4.2}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.2}{\ignorespaces PipeSystemModel.compute\_system\_head and set\_clogging\_resistance}}{34}{lstlisting.4.2}\protected@file@percent }
+\citation{randall2011vibration}
+\@writefile{toc}{\contentsline {subsubsection}{Bearing Model}{35}{section*.25}\protected@file@percent }
+\newlabel{lst:bearing_model}{{4.3}{35}{BearingModel.compute\_vibration and compute\_bearing\_temperature}{lstlisting.4.3}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.3}{\ignorespaces BearingModel.compute\_vibration and compute\_bearing\_temperature}}{35}{lstlisting.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{Motor Model}{36}{section*.26}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.2}Model Execution Logic}{36}{subsection.4.2.2}\protected@file@percent }
+\newlabel{lst:step}{{4.4}{36}{ScenarioExecutor.step core logic (simulator-service/scenarios/scenario\_executor.py)}{lstlisting.4.4}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.4}{\ignorespaces ScenarioExecutor.step core logic (simulator-service/scenarios/scenario\_executor.py)}}{36}{lstlisting.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.3}Fault Injector}{37}{subsection.4.2.3}\protected@file@percent }
+\newlabel{lst:inject}{{4.5}{37}{FaultInjector.inject\_fault (simulator-service/faults/fault\_injector.py)}{lstlisting.4.5}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.5}{\ignorespaces FaultInjector.inject\_fault (simulator-service/faults/fault\_injector.py)}}{37}{lstlisting.4.5}\protected@file@percent }
+\newlabel{lst:bearing}{{4.6}{38}{BearingWearFault.update (simulator-service/faults/fault\_types.py)}{lstlisting.4.6}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.6}{\ignorespaces BearingWearFault.update (simulator-service/faults/fault\_types.py)}}{38}{lstlisting.4.6}\protected@file@percent }
+\citation{chandola2009anomaly,li2021intelligent}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.4}Scenario Executor}{39}{subsection.4.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.3}Agent A Implementation}{39}{section.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.1}TelemetryBuffer}{39}{subsection.4.3.1}\protected@file@percent }
+\newlabel{lst:buffer}{{4.7}{40}{TelemetryBuffer.compute\_stats and duration\_above\_threshold}{lstlisting.4.7}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.7}{\ignorespaces TelemetryBuffer.compute\_stats and duration\_above\_threshold}}{40}{lstlisting.4.7}\protected@file@percent }
+\citation{chandola2009anomaly}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.2}ThresholdDetector}{41}{subsection.4.3.2}\protected@file@percent }
+\newlabel{lst:thresh}{{4.8}{41}{DEFAULT\_THRESHOLDS (agent-monitor/detection/threshold\_detector.py)}{lstlisting.4.8}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.8}{\ignorespaces DEFAULT\_THRESHOLDS (agent-monitor/detection/threshold\_detector.py)}}{41}{lstlisting.4.8}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.2}{\ignorespaces Slope thresholds for trend-based alerts.}}{42}{table.caption.27}\protected@file@percent }
+\newlabel{tab:slope}{{4.2}{42}{Slope thresholds for trend-based alerts}{table.caption.27}{}}
+\newlabel{lst:duration}{{4.9}{42}{Duration check in ThresholdDetector.detect}{lstlisting.4.9}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.9}{\ignorespaces Duration check in ThresholdDetector.detect}}{42}{lstlisting.4.9}\protected@file@percent }
+\citation{yao2023react}
+\citation{langgraph2024}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.3}Startup Configuration}{43}{subsection.4.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.4}Agent B Implementation}{43}{section.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.1}ReAct Agent Creation}{43}{subsection.4.4.1}\protected@file@percent }
+\newlabel{lst:agent}{{4.10}{43}{create\_diagnosis\_agent (agent-diagnosis/agent/agent.py)}{lstlisting.4.10}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.10}{\ignorespaces create\_diagnosis\_agent (agent-diagnosis/agent/agent.py)}}{43}{lstlisting.4.10}\protected@file@percent }
+\citation{schick2023toolformer}
+\citation{isermann2006fault}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.2}Tools}{44}{subsection.4.4.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.3}{\ignorespaces Agent B (Diagnosis) tools.}}{44}{table.caption.28}\protected@file@percent }
+\newlabel{tab:agentb_tools}{{4.3}{44}{Agent B (Diagnosis) tools}{table.caption.28}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.3}Answer Parsing and Output Schema}{44}{subsection.4.4.3}\protected@file@percent }
+\newlabel{lst:parse}{{4.11}{45}{\_parse\_final\_answer (agent-diagnosis/agent/agent.py)}{lstlisting.4.11}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.11}{\ignorespaces \_parse\_final\_answer (agent-diagnosis/agent/agent.py)}}{45}{lstlisting.4.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.4}Diagnosis Flow}{45}{subsection.4.4.4}\protected@file@percent }
+\citation{lewis2020rag}
+\citation{langgraph2024}
+\citation{reimers2019sentence,reimers2024sentence}
+\citation{sqlitevec2024}
+\@writefile{toc}{\contentsline {section}{\numberline {4.5}Agent C Implementation}{46}{section.4.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.6}Agent D Implementation}{46}{section.4.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6.1}RAG Indexing}{46}{subsection.4.6.1}\protected@file@percent }
+\newlabel{lst:index}{{4.12}{46}{index\_diagnosis (shared\_lib/vector\_indexing.py)}{lstlisting.4.12}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4.12}{\ignorespaces index\_diagnosis (shared\_lib/vector\_indexing.py)}}{46}{lstlisting.4.12}\protected@file@percent }
+\citation{lewis2020rag}
+\citation{li2022blip,liu2023llava}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6.2}RAG and Chat Tools}{47}{subsection.4.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6.3}Approve/Reject Flow and Chat Streaming}{47}{subsection.4.6.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.4}{\ignorespaces Agent D (Review) tools.}}{48}{table.caption.29}\protected@file@percent }
+\newlabel{tab:agentd_tools}{{4.4}{48}{Agent D (Review) tools}{table.caption.29}{}}
+\citation{sqlitevec2024}
+\citation{reimers2019sentence,reimers2024sentence}
+\@writefile{toc}{\contentsline {section}{\numberline {4.7}Database and Vector Store}{49}{section.4.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.7.1}SQLite Schema Overview}{49}{subsection.4.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.7.2}Embedding Pipeline}{49}{subsection.4.7.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.5}{\ignorespaces SQLite tables and main columns (full schema in Appendix~\ref {app:db_schema}).}}{50}{table.caption.30}\protected@file@percent }
+\newlabel{tab:db_overview}{{4.5}{50}{SQLite tables and main columns (full schema in Appendix~\ref {app:db_schema})}{table.caption.30}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.8}Deployment}{51}{section.4.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.8.1}Backend Deployment (EC2)}{51}{subsection.4.8.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.6}{\ignorespaces Backend components (EC2).}}{51}{table.caption.31}\protected@file@percent }
+\newlabel{tab:backend_components}{{4.6}{51}{Backend components (EC2)}{table.caption.31}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.8.2}Database Deployment (Backend)}{52}{subsection.4.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.8.3}Frontend Deployment (S3, CloudFront, DNS)}{52}{subsection.4.8.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.7}{\ignorespaces Deployment summary: backend vs.\ frontend.}}{53}{table.caption.32}\protected@file@percent }
+\newlabel{tab:deploy_summary}{{4.7}{53}{Deployment summary: backend vs.\ frontend}{table.caption.32}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {5}Evaluation}{54}{chapter.5}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:eval}{{5}{54}{Evaluation}{chapter.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.1}Evaluation Setup}{54}{section.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.1}Scenarios}{54}{subsection.5.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1.2}Metrics}{55}{subsection.5.1.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.1}{\ignorespaces Evaluation summary: scenario runs, detection rate, diagnosis accuracy, healthy false positive rate, fault scenario detection rate.}}{55}{figure.caption.33}\protected@file@percent }
+\newlabel{fig:eval_summary}{{5.1}{55}{Evaluation summary: scenario runs, detection rate, diagnosis accuracy, healthy false positive rate, fault scenario detection rate}{figure.caption.33}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.2}Alert Detection Results}{55}{section.5.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.1}{\ignorespaces Alert detection by signal.}}{56}{table.caption.34}\protected@file@percent }
+\newlabel{tab:detection_by_signal}{{5.1}{56}{Alert detection by signal}{table.caption.34}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.2}{\ignorespaces Alert detection rate by signal (\%).}}{56}{figure.caption.35}\protected@file@percent }
+\newlabel{fig:detection_by_signal}{{5.2}{56}{Alert detection rate by signal (\%)}{figure.caption.35}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.3}Diagnosis Accuracy}{56}{section.5.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5.2}{\ignorespaces Diagnosis accuracy by root cause.}}{57}{table.caption.36}\protected@file@percent }
+\newlabel{tab:diagnosis_accuracy}{{5.2}{57}{Diagnosis accuracy by root cause}{table.caption.36}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.3}{\ignorespaces Diagnosis accuracy by root cause (\%).}}{57}{figure.caption.37}\protected@file@percent }
+\newlabel{fig:diagnosis_accuracy}{{5.3}{57}{Diagnosis accuracy by root cause (\%)}{figure.caption.37}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.4}Scenario Matrix}{57}{section.5.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.4}{\ignorespaces Confusion matrix: expected (rows) vs.\ predicted (columns).}}{58}{figure.caption.38}\protected@file@percent }
+\newlabel{fig:confusion_matrix}{{5.4}{58}{Confusion matrix: expected (rows) vs.\ predicted (columns)}{figure.caption.38}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.5}{\ignorespaces Scenario matrix: detection rate vs.\ diagnosis accuracy per fault scenario.}}{58}{figure.caption.39}\protected@file@percent }
+\newlabel{fig:scenario_matrix}{{5.5}{58}{Scenario matrix: detection rate vs.\ diagnosis accuracy per fault scenario}{figure.caption.39}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.5}Token Usage and Latency}{59}{section.5.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.6}{\ignorespaces Steps and tokens: correct vs.\ incorrect diagnoses.}}{59}{figure.caption.40}\protected@file@percent }
+\newlabel{fig:correct_vs_incorrect}{{5.6}{59}{Steps and tokens: correct vs.\ incorrect diagnoses}{figure.caption.40}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.7}{\ignorespaces Average token usage by scenario (k tokens).}}{59}{figure.caption.41}\protected@file@percent }
+\newlabel{fig:tokens_by_scenario}{{5.7}{59}{Average token usage by scenario (k tokens)}{figure.caption.41}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.6}Discussion}{60}{section.5.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.7}Improvement Opportunities}{60}{section.5.7}\protected@file@percent }
+\citation{yao2023react,schick2023toolformer}
+\citation{lewis2020rag}
+\@writefile{toc}{\contentsline {chapter}{\numberline {6}Conclusion}{61}{chapter.6}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:conclusion}{{6}{61}{Conclusion}{chapter.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.1}Summary}{61}{section.6.1}\protected@file@percent }
+\bibstyle{ieeetr}
+\bibdata{references}
+\@writefile{toc}{\contentsline {section}{\numberline {6.2}Future Work}{62}{section.6.2}\protected@file@percent }
+\bibcite{lee2015cps}{{1}{}{{}}{{}}}
+\bibcite{rahman2022deep}{{2}{}{{}}{{}}}
+\bibcite{li2021intelligent}{{3}{}{{}}{{}}}
+\bibcite{chandola2009anomaly}{{4}{}{{}}{{}}}
+\bibcite{ahmed2016survey}{{5}{}{{}}{{}}}
+\bibcite{isermann2006fault}{{6}{}{{}}{{}}}
+\bibcite{yin2012comparison}{{7}{}{{}}{{}}}
+\bibcite{zhang2009fault}{{8}{}{{}}{{}}}
+\bibcite{chen1999robust}{{9}{}{{}}{{}}}
+\bibcite{yao2023react}{{10}{}{{}}{{}}}
+\bibcite{schick2023toolformer}{{11}{}{{}}{{}}}
+\bibcite{yao2023tot}{{12}{}{{}}{{}}}
+\bibcite{wooldridge2009multiagent}{{13}{}{{}}{{}}}
+\bibcite{russell2020aima}{{14}{}{{}}{{}}}
+\bibcite{oasis2019mqtt}{{15}{}{{}}{{}}}
+\bibcite{hussain2021mqtt}{{16}{}{{}}{{}}}
+\bibcite{lewis2020rag}{{17}{}{{}}{{}}}
+\bibcite{borgeaud2022retrieving}{{18}{}{{}}{{}}}
+\bibcite{reimers2019sentence}{{19}{}{{}}{{}}}
+\bibcite{sqlitevec2024}{{20}{}{{}}{{}}}
+\bibcite{li2022blip}{{21}{}{{}}{{}}}
+\bibcite{liu2023llava}{{22}{}{{}}{{}}}
+\bibcite{zhang2024mmllms}{{23}{}{{}}{{}}}
+\bibcite{ietf2012oauth2}{{24}{}{{}}{{}}}
+\bibcite{salesforce2024rest}{{25}{}{{}}{{}}}
+\bibcite{fastapi2024}{{26}{}{{}}{{}}}
+\bibcite{langchain2024}{{27}{}{{}}{{}}}
+\bibcite{langgraph2024}{{28}{}{{}}{{}}}
+\bibcite{reimers2024sentence}{{29}{}{{}}{{}}}
+\bibcite{reeh2023physical}{{30}{}{{}}{{}}}
+\bibcite{white2016fluid}{{31}{}{{}}{{}}}
+\bibcite{randall2011vibration}{{32}{}{{}}{{}}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {A}Database Schema}{66}{appendix.A}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{app:db_schema}{{A}{66}{Database Schema}{appendix.A}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {B}Scenario JSON Example}{75}{appendix.B}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{app:scenario_json}{{B}{75}{Scenario JSON Example}{appendix.B}{}}
+\newlabel{lst:scenario_bearing}{{B.1}{75}{bearing\_wear\_eval.json}{lstlisting.B.1}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {B.1}{\ignorespaces bearing\_wear\_eval.json}}{75}{lstlisting.B.1}\protected@file@percent }
+\newlabel{lst:scenario_healthy}{{B.2}{76}{healthy\_baseline.json}{lstlisting.B.2}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {B.2}{\ignorespaces healthy\_baseline.json}}{76}{lstlisting.B.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {C}Rule Document Example}{77}{appendix.C}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{app:rule_doc}{{C}{77}{Rule Document Example}{appendix.C}{}}
+\newlabel{lst:rule_bearing}{{C.1}{77}{bearing\_wear.md (agent-diagnosis/rules/)}{lstlisting.C.1}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {C.1}{\ignorespaces bearing\_wear.md (agent-diagnosis/rules/)}}{77}{lstlisting.C.1}\protected@file@percent }
+\providecommand\NAT@force@numbers{}\NAT@force@numbers
+\@writefile{toc}{\contentsline {chapter}{\numberline {D}Project Links}{79}{appendix.D}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{app:project_links}{{D}{79}{Project Links}{appendix.D}{}}
+\gdef \@abspage@last{79}

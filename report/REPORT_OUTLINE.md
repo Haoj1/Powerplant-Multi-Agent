@@ -11,7 +11,7 @@
 
 ---
 
-## Document Structure (Target: ~42 pages)
+## Document Structure (Target: ~52 pages)
 
 ### Front Matter
 
@@ -70,65 +70,89 @@
 
 ---
 
-### Chapter 3. System Design (~8 pages)
+### Chapter 3. System Design (~14 pages)
 
 **3.1 Overview**
 - High-level architecture diagram (Simulator → Agent A → Agent B → Agent C → Agent D)
 - Data flow: telemetry → alerts → diagnosis → tickets → feedback
 
-**3.2 Simulator**
+**3.2 Architectural Background**
+- Why multi-agent: separation of concerns, scalability, fault isolation
+- Pub/sub vs. request-response: MQTT for loose coupling, async event flow
+- Stateless agents: each agent processes events independently; no shared mutable state
+
+**3.3 LLM, Agent, and ReAct**
+- **LLM role:** Reasoning over tool outputs; structured output (JSON) for diagnosis
+- **Agent paradigm:** Autonomous entity that perceives (alerts), reasons (ReAct), acts (tools)
+- **ReAct:** Thought → Action → Observation loop [8]; interleaves reasoning and tool use
+- **Tool use:** query_rules, query_telemetry, query_alerts; LLM decides when to call
+- **Why ReAct over pure prompt:** Handles multi-step reasoning; evidence traceability
+
+**3.4 RAG Design**
+- **Purpose:** Enrich agent context with retrieved domain knowledge (rules, past diagnoses)
+- **Indexing:** Alerts, diagnoses, rules, feedback, chat messages → vector embeddings
+- **Retrieval:** Semantic search via sqlite-vec; cosine similarity
+- **Agent D RAG tools:** query_similar_diagnoses, query_similar_rules, query_similar_alerts, etc.
+- **Embedding model:** all-MiniLM-L6-v2 (384 dim)
+
+**3.5 Simulator**
 - Physical models: pump, piping, bearing
 - Fault injection: bearing_wear, clogging, valve_stuck, sensor_drift, noise_burst
 - Scenario-driven execution (JSON scripts)
 
-**3.3 Agent A (Monitor)**
+**3.6 Agent A (Monitor)**
 - MQTT subscription to telemetry
 - Threshold detector: per-signal thresholds, duration, slope checks
 - Alert schema and publishing
 
-**3.4 Agent B (Diagnosis)**
+**3.7 Agent B (Diagnosis)**
 - ReAct agent with tools: query_rules, query_telemetry, query_alerts
 - Rule storage (Markdown documents) and retrieval
 - Diagnosis report schema
 
-**3.5 Agent C (Ticket)**
+**3.8 Agent C (Ticket)**
 - Review request creation from diagnosis
 - No LLM; rule-based relay
 
-**3.6 Agent D (Review)**
+**3.9 Agent D (Review)**
 - Human-in-the-loop interface
 - RAG tools: query_similar_diagnoses, query_similar_rules, etc.
 - Approve/reject workflow; optional Salesforce integration
 
-**3.7 Message Bus and Data Schemas**
+**3.10 Message Bus and Data Schemas**
 - MQTT topic convention
 - Telemetry, AlertEvent, DiagnosisReport, Ticket, Feedback schemas
 
 ---
 
-### Chapter 4. Implementation (~6 pages)
+### Chapter 4. Implementation (~10 pages)
 
 **4.1 Technology Stack**
 - Python 3.11, FastAPI, pydantic; MQTT (Mosquitto); LangChain/LangGraph; sqlite-vec, sentence-transformers
 
 **4.2 Simulator Implementation**
 - Motor, bearing, pipe models; fault injector; scenario executor
+- **Code example:** FaultInjector.inject_fault; BearingWearFault.update
 
 **4.3 Agent A Implementation**
 - Telemetry buffer, threshold detector, MQTT publisher
+- **Code example:** ThresholdDetector.detect (threshold + duration check); DEFAULT_THRESHOLDS
 
 **4.4 Agent B Implementation**
 - ReAct setup, tool implementations, rule indexing
+- **Code example:** create_react_agent (LangGraph); query_rules tool; _parse_final_answer
 
 **4.5 Agent D Implementation**
 - RAG indexing (alerts, diagnoses, rules, feedback, chat); ReAct tools for review chat
+- **Code example:** index_diagnosis; add_text_to_vector_db; query_similar_diagnoses
 
 **4.6 Database and Vector Store**
 - SQLite schema; sqlite-vec for embeddings
+- **Code example:** vec_memory schema; embedding pipeline
 
 ---
 
-### Chapter 5. Evaluation (~7 pages)
+### Chapter 5. Evaluation (~9 pages)
 
 **5.1 Evaluation Setup**
 - Scenario set: healthy_baseline, bearing_wear, clogging, valve_flow_mismatch, sensor_drift, rpm_override, noise_burst
@@ -152,6 +176,12 @@
 - Strengths and limitations
 - Comparison with baseline or related work (if applicable)
 
+**5.6 Improvement Opportunities**
+- **Alert detection:** noise_burst 0% (transient spike; threshold/slope not tuned); vibration_rms 50%; consider shorter duration for spikes; tune FAST_DURATION_SIGNALS
+- **Diagnosis:** clogging vs. sensor_drift confusion; add discriminative rules (flow-pressure correlation); expand rule coverage for sensor_override
+- **RAG:** batch indexing; hybrid keyword + semantic search; tune similarity threshold
+- **Evaluation:** more scenarios; cross-validation; real sensor data; ablation (rule-only vs. ReAct)
+
 ---
 
 ### Chapter 6. Conclusion (~2 pages)
@@ -169,15 +199,16 @@
 | Section | Pages |
 |---------|-------|
 | References | 2–3 |
-| Appendices (optional) | 2–4 |
+| Appendices | 4–5 |
 
 ---
 
-### Appendices (Optional)
+### Appendices
 
-- **Appendix A:** Scenario JSON examples
-- **Appendix B:** Rule document examples
+- **Appendix A:** Scenario JSON examples (healthy_baseline, bearing_wear_eval)
+- **Appendix B:** Rule document examples (bearing_wear.md)
 - **Appendix C:** API endpoints or configuration
+- **Appendix D:** Key code snippets (ReAct agent creation, RAG indexing)
 
 ---
 
@@ -188,13 +219,15 @@
 | Fig. 1 | System architecture diagram |
 | Fig. 2 | Data flow (telemetry → alerts → diagnosis → tickets) |
 | Fig. 3 | ReAct agent loop (Agent B) |
-| Fig. 4 | Detection rate by signal |
-| Fig. 5 | Diagnosis accuracy by scenario |
-| Fig. 6 | Confusion matrix (if applicable) |
+| Fig. 4 | RAG indexing and retrieval flow |
+| Fig. 5 | Detection rate by signal |
+| Fig. 6 | Diagnosis accuracy by scenario |
+| Fig. 7 | Confusion matrix (if applicable) |
 | Table 1 | Fault types and physical effects |
 | Table 2 | MQTT topic convention |
 | Table 3 | Evaluation scenario summary |
 | Table 4 | Per-scenario metrics (detection, diagnosis, tokens) |
+| Table 5 | Improvement opportunities summary |
 
 ---
 
@@ -205,10 +238,10 @@
 | Front matter | 4–5 |
 | Ch. 1 Introduction | 4 |
 | Ch. 2 Background | 5 |
-| Ch. 3 System Design | 8 |
-| Ch. 4 Implementation | 6 |
-| Ch. 5 Evaluation | 7 |
+| Ch. 3 System Design | 14 |
+| Ch. 4 Implementation | 10 |
+| Ch. 5 Evaluation | 9 |
 | Ch. 6 Conclusion | 2 |
 | References | 2–3 |
-| Appendices | 2–4 |
-| **Total** | **40–44** |
+| Appendices | 4–5 |
+| **Total** | **52–54** |

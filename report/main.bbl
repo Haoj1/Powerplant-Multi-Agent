@@ -1,0 +1,152 @@
+\begin{thebibliography}{10}
+
+\bibitem{lee2015cps}
+J.~Lee, B.~Bagheri, and H.-A. Kao, ``A cyber-physical systems architecture for
+  industry 4.0-based manufacturing systems,'' {\em Manufacturing Letters},
+  vol.~3, pp.~18--23, Jan. 2015.
+
+\bibitem{rahman2022deep}
+H.~Wang, W.~Zhang, D.~Yang, and Y.~Xiang, ``Deep-learning-enabled predictive
+  maintenance in industrial internet of things: Methods, applications, and
+  challenges,'' {\em IEEE Systems Journal}, vol.~17, no.~2, pp.~2602--2615,
+  2023.
+
+\bibitem{li2021intelligent}
+T.~Zhu, Y.~Ran, X.~Zhou, and Y.~Wen, ``A survey on intelligent predictive
+  maintenance (ipdm) in the era of fully connected intelligence,'' {\em IEEE
+  Communications Surveys \& Tutorials}, vol.~28, pp.~633--671, 2026.
+
+\bibitem{chandola2009anomaly}
+V.~Chandola, A.~Banerjee, and V.~Kumar, ``Anomaly detection: A survey,'' {\em
+  ACM Comput. Surv.}, vol.~41, pp.~1--58, July 2009.
+
+\bibitem{ahmed2016survey}
+M.~Ahmed, A.~N. Mahmood, and J.~Hu, ``A survey of network anomaly detection
+  techniques,'' {\em J. Netw. Comput. Appl.}, vol.~60, pp.~19--31, Jan. 2016.
+
+\bibitem{isermann2006fault}
+R.~Isermann, {\em Fault-Diagnosis Systems: An Introduction from Fault Detection
+  to Fault Tolerance}.
+\newblock Berlin, Germany: Springer, 2006.
+
+\bibitem{yin2012comparison}
+S.~Yin, S.~X. Ding, A.~Haghani, H.~Hao, and P.~Zhang, ``A comparison study of
+  basic data-driven fault diagnosis and process monitoring methods on the
+  benchmark tennessee eastman process,'' {\em J. Process Control}, vol.~22,
+  pp.~1567--1581, Oct. 2012.
+
+\bibitem{zhang2009fault}
+X.~Zhang, Q.~Xu, and C.~K. Tse, ``Fault diagnosis of power electronic systems
+  based on fault tree analysis,'' {\em IEEE Trans. Power Electron.}, vol.~24,
+  pp.~99--112, Jan. 2009.
+
+\bibitem{chen1999robust}
+J.~Chen and R.~J. Patton, {\em Robust Model-Based Fault Diagnosis for Dynamic
+  Systems}.
+\newblock Boston, MA, USA: Kluwer, 1999.
+
+\bibitem{yao2023react}
+S.~Yao, J.~Zhao, D.~Yu, N.~Du, I.~Shafran, K.~R. Narasimhan, and Y.~Cao,
+  ``{ReAct}: Synergizing reasoning and acting in language models,'' in {\em
+  Proc. Int. Conf. Learn. Represent. (ICLR)}, 2023.
+
+\bibitem{schick2023toolformer}
+T.~Schick, J.~Dwivedi-Yu, R.~Dess{\`i}, R.~Raileanu, M.~Lomeli, L.~Zettlemoyer,
+  N.~Cancedda, and T.~Scialom, ``Toolformer: Language models can teach
+  themselves to use tools,'' in {\em Proc. Adv. Neural Inf. Process. Syst.
+  (NeurIPS)}, vol.~36, 2023.
+
+\bibitem{yao2023tot}
+S.~Yao, J.~Yu, D.~Zhao, I.~Shafran, K.~R. Narasimhan, and Y.~Cao, ``Tree of
+  thoughts: Deliberate problem solving with large language models,'' in {\em
+  Proc. Adv. Neural Inf. Process. Syst. (NeurIPS)}, vol.~36, 2023.
+
+\bibitem{wooldridge2009multiagent}
+M.~Wooldridge, {\em An Introduction to MultiAgent Systems}.
+\newblock Chichester, U.K.: Wiley, 2nd~ed., 2009.
+
+\bibitem{russell2020aima}
+S.~Russell and P.~Norvig, {\em Artificial Intelligence: A Modern Approach}.
+\newblock Hoboken, NJ, USA: Pearson, 4th~ed., 2020.
+
+\bibitem{oasis2019mqtt}
+{OASIS}, ``{MQTT} version 3.1.1.'' OASIS Standard, Oct. 2014.
+
+\bibitem{hussain2021mqtt}
+F.~Buccafurri, V.~De~Angelis, and S.~Lazzaro, ``Mqtt-i: Achieving end-to-end
+  data flow integrity in mqtt,'' {\em IEEE Transactions on Dependable and
+  Secure Computing}, vol.~21, no.~5, pp.~4717--4734, 2024.
+
+\bibitem{lewis2020rag}
+P.~Lewis, E.~Perez, A.~Piktus, F.~Petroni, V.~Karpukhin, N.~Goyal,
+  H.~K{\"u}ttler, M.~Lewis, W.~t.~Yih, T.~Rockt{\"a}schel, S.~Riedel, and
+  D.~Kiela, ``Retrieval-augmented generation for knowledge-intensive {NLP}
+  tasks,'' in {\em Proc. Adv. Neural Inf. Process. Syst. (NeurIPS)}, vol.~33,
+  pp.~9459--9474, 2020.
+
+\bibitem{borgeaud2022retrieving}
+S.~Borgeaud, A.~Mensch, J.~Hoffmann, T.~Cai, E.~Rutherford, K.~Millican,
+  J.~W.~B. van~den Driessche, J.-B. Lespiau, B.~Damoc, A.~Clark,
+  D.~de~Las~Casas, A.~Guy, J.~Menick, R.~Ring, T.~Hennigan, S.~Huang,
+  L.~Maggiore, and C.~Jones, ``Improving language models by retrieving from
+  trillions of tokens,'' in {\em Proc. Int. Conf. Mach. Learn. (ICML)},
+  pp.~2206--2240, 2022.
+
+\bibitem{reimers2019sentence}
+N.~Reimers and I.~Gurevych, ``Sentence-{BERT}: Sentence embeddings using
+  siamese {BERT}-networks,'' in {\em Proc. Conf. Empir. Methods Nat. Lang.
+  Process. (EMNLP)}, pp.~3982--3992, 2019.
+
+\bibitem{sqlitevec2024}
+A.~Garcia, ``sqlite-vec: Vector similarity search for {SQLite},'' 2024.
+
+\bibitem{li2022blip}
+J.~Li, D.~Li, C.~Xiong, and S.~Hoi, ``{BLIP}: Bootstrapping language-image
+  pre-training for unified vision-language understanding and generation,'' in
+  {\em Proc. Int. Conf. Mach. Learn. (ICML)}, pp.~12888--12900, 2022.
+
+\bibitem{liu2023llava}
+H.~Liu, C.~Li, Q.~Wu, and Y.~J. Lee, ``Visual instruction tuning,'' in {\em
+  Proc. Adv. Neural Inf. Process. Syst. (NeurIPS)}, vol.~36, 2023.
+
+\bibitem{zhang2024mmllms}
+D.~Zhang, Y.~Yu, J.~Dong, C.~Li, D.~Su, C.~Chu, and D.~Yu, ``{MM-LLMs}: Recent
+  advances in multimodal large language models,'' in {\em Proc. Assoc. Comput.
+  Linguist. (ACL) Findings}, pp.~5506--5527, 2024.
+
+\bibitem{ietf2012oauth2}
+D.~Hardt, ``The {OAuth} 2.0 authorization framework.'' RFC 6749, IETF, Oct.
+  2012.
+
+\bibitem{salesforce2024rest}
+{Salesforce}, ``Salesforce {REST} {API} developer guide,'' 2024.
+
+\bibitem{fastapi2024}
+S.~Ram{\'i}rez, ``Fastapi: Modern, fast web framework for building {API}s,''
+  2024.
+
+\bibitem{langchain2024}
+{LangChain}, ``Langchain documentation,'' 2024.
+
+\bibitem{langgraph2024}
+{LangChain}, ``Langgraph: Build resilient agents with graphs,'' 2024.
+
+\bibitem{reimers2024sentence}
+N.~Reimers and I.~Gurevych, ``sentence-transformers: Multilingual sentence
+  embeddings,'' 2024.
+
+\bibitem{reeh2023physical}
+N.~Reeh, G.~Manthei, and P.~J. Klar, ``Physical modelling of the set of
+  performance curves for radial centrifugal pumps to determine the flow rate,''
+  {\em Applied System Innovation}, vol.~6, no.~6, p.~111, 2023.
+
+\bibitem{white2016fluid}
+F.~M. White, {\em Fluid Mechanics}.
+\newblock New York, NY, USA: McGraw-Hill, 8th~ed., 2016.
+
+\bibitem{randall2011vibration}
+R.~B. Randall, {\em Vibration-based Condition Monitoring: Industrial, Aerospace
+  and Automotive Applications}.
+\newblock Chichester, U.K.: Wiley, 2011.
+
+\end{thebibliography}
