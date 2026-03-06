@@ -51,12 +51,15 @@ This report presents the design, implementation, and evaluation of a multi-agent
 
 3. System Design  
    3.1 Overview  
-   3.2 Simulator  
-   3.3 Agent A (Monitor)  
-   3.4 Agent B (Diagnosis)  
-   3.5 Agent C (Ticket)  
-   3.6 Agent D (Review)  
-   3.7 Message Bus and Data Schemas  
+   3.2 Architectural Background  
+   3.3 LLM, Agent, and ReAct  
+   3.4 RAG Design  
+   3.5 Simulator  
+   3.6 Agent A (Monitor)  
+   3.7 Agent B (Diagnosis)  
+   3.8 Agent C (Ticket)  
+   3.9 Agent D (Review)  
+   3.10 Message Bus and Data Schemas  
 
 4. Implementation  
    4.1 Technology Stack  
@@ -72,6 +75,7 @@ This report presents the design, implementation, and evaluation of a multi-agent
    5.3 Diagnosis Accuracy  
    5.4 Token Usage and Latency  
    5.5 Discussion  
+   5.6 Improvement Opportunities  
 
 6. Conclusion  
    6.1 Summary  
@@ -79,7 +83,7 @@ This report presents the design, implementation, and evaluation of a multi-agent
 
 References  
 
-Appendices (Optional)  
+Appendices  
 
 ---
 
@@ -133,27 +137,39 @@ Appendices (Optional)
 
 [Insert Fig. 1: Architecture diagram. Describe data flow.]
 
-### 3.2 Simulator
+### 3.2 Architectural Background
+
+[Write: Why multi-agent—separation of concerns, scalability, fault isolation. Pub/sub vs. request-response; MQTT for loose coupling. Stateless agents: each processes events independently.]
+
+### 3.3 LLM, Agent, and ReAct
+
+[Write: Cite [8]. LLM role: reasoning over tool outputs, structured JSON output. Agent paradigm: perceive (alerts) → reason (ReAct) → act (tools). ReAct loop: Thought → Action → Observation. Tool use: query_rules, query_telemetry, query_alerts; LLM decides when. Why ReAct over pure prompt: multi-step reasoning, evidence traceability.]
+
+### 3.4 RAG Design
+
+[Write: Purpose—enrich context with rules, past diagnoses. Indexing: alerts, diagnoses, rules, feedback, chat → embeddings. Retrieval: sqlite-vec, cosine similarity. Agent D tools: query_similar_diagnoses, query_similar_rules, etc. Embedding: all-MiniLM-L6-v2. Insert Fig. 4: RAG flow.]
+
+### 3.5 Simulator
 
 [Describe: pump, piping, bearing models; fault types; scenario JSON.]
 
-### 3.3 Agent A (Monitor)
+### 3.6 Agent A (Monitor)
 
 [Describe: MQTT subscription; threshold detector; alert schema.]
 
-### 3.4 Agent B (Diagnosis)
+### 3.7 Agent B (Diagnosis)
 
 [Describe: ReAct; tools; rule storage; diagnosis schema.]
 
-### 3.5 Agent C (Ticket)
+### 3.8 Agent C (Ticket)
 
 [Describe: Review request creation; no LLM.]
 
-### 3.6 Agent D (Review)
+### 3.9 Agent D (Review)
 
 [Describe: RAG tools; approve/reject; optional Salesforce.]
 
-### 3.7 Message Bus and Data Schemas
+### 3.10 Message Bus and Data Schemas
 
 [Insert Table 1: MQTT topics. Describe schemas.]
 
@@ -163,27 +179,66 @@ Appendices (Optional)
 
 ### 4.1 Technology Stack
 
-[Python, FastAPI, MQTT, LangChain, sqlite-vec, sentence-transformers.]
+[Python 3.11, FastAPI, pydantic; MQTT (paho-mqtt, Mosquitto); LangChain, LangGraph; sqlite-vec, sentence-transformers; matplotlib for eval charts.]
 
 ### 4.2 Simulator Implementation
 
-[Fault injector; scenario executor; models.]
+[Describe: FaultInjector, fault_types (BearingWearFault, CloggingFault, etc.), scenario executor. **Code example:**]
+
+```python
+# FaultInjector.inject_fault (simulator-service/faults/fault_injector.py)
+fault_map = {
+    "bearing_wear": BearingWearFault,
+    "clogging": CloggingFault,
+    "valve_stuck": ValveStuckFault,
+    ...
+}
+fault = fault_map[fault_type](start_time, params)
+self.active_faults.append(fault)
+```
 
 ### 4.3 Agent A Implementation
 
-[Telemetry buffer; threshold detector.]
+[Describe: TelemetryBuffer, ThresholdDetector, MQTT publisher. **Code example:**]
+
+```python
+# ThresholdDetector.detect (agent-monitor/detection/threshold_detector.py)
+# Duration check: skip if sustained breach < min_dur
+min_dur = 0.5 if signal_name in FAST_DURATION_SIGNALS else self.min_duration_sec
+if buffer and min_dur > 0:
+    dur = buffer.duration_above_threshold(asset_id, signal_name, thr_val, side, window_sec)
+    if dur < min_dur:
+        continue  # Not sustained long enough
+```
 
 ### 4.4 Agent B Implementation
 
-[ReAct setup; tools; rule indexing.]
+[Describe: LangGraph create_react_agent, tools, _parse_final_answer. **Code example:**]
+
+```python
+# agent-diagnosis/agent/agent.py
+def create_diagnosis_agent():
+    from langgraph.prebuilt import create_react_agent
+    llm = ChatOpenAI(model="deepseek-chat", temperature=0)
+    tools = get_diagnosis_tools()  # query_rules, query_telemetry, query_alerts
+    return create_react_agent(llm, tools)
+```
 
 ### 4.5 Agent D Implementation
 
-[RAG indexing; ReAct tools.]
+[Describe: RAG indexing on approve/reject/chat; query_similar_* tools. **Code example:**]
+
+```python
+# shared_lib/vector_indexing.py
+@_safe_index
+def index_diagnosis(diagnosis_id: int, diagnosis_data: Dict[str, Any]):
+    text = f"Root cause: {root_cause}\nConfidence: {confidence}\n..."
+    return add_text_to_vector_db(text=text, doc_type="diagnosis", doc_id=diagnosis_id, ...)
+```
 
 ### 4.6 Database and Vector Store
 
-[SQLite; sqlite-vec.]
+[Describe: SQLite (alerts, diagnosis, telemetry); sqlite-vec vec_memory table; embedding pipeline.]
 
 ---
 
@@ -191,23 +246,34 @@ Appendices (Optional)
 
 ### 5.1 Evaluation Setup
 
-[Scenarios; metrics; eval_result.json.]
+[Scenarios; metrics; eval_result.json; run_alert_eval.py flow.]
 
 ### 5.2 Alert Detection Results
 
-[Detection rate 44.9%; by signal; healthy FP 11.9%. Insert Fig. 4.]
+[Detection rate 44.9%; by signal; healthy FP 11.9%. Insert Fig. 5.]
 
 ### 5.3 Diagnosis Accuracy
 
-[Per-scenario; bearing_wear/valve_stuck 100%; clogging 63.6%; sensor_override 58.3%. Insert Fig. 5, Table 4.]
+[Per-scenario; bearing_wear/valve_stuck 100%; clogging 63.6%; sensor_override 58.3%. Insert Fig. 6, Table 4.]
 
 ### 5.4 Token Usage and Latency
 
-[Avg steps; avg tokens per scenario.]
+[Avg steps; avg tokens per scenario; cost trade-offs.]
 
 ### 5.5 Discussion
 
-[Strengths; limitations; noise_burst 0% detection.]
+[Strengths; limitations; comparison with related work.]
+
+### 5.6 Improvement Opportunities
+
+| Area | Current Issue | Improvement |
+|------|---------------|-------------|
+| Alert detection | noise_burst 0%; vibration_rms 50% | Tune threshold/slope for spikes; shorter duration for transient signals |
+| Diagnosis | clogging 63.6%; sensor_override 58.3% | Add flow-pressure correlation rules; expand sensor_drift discriminants |
+| RAG | Single embedding model | Batch indexing; hybrid keyword + semantic; tune similarity threshold |
+| Evaluation | Synthetic only | More scenarios; cross-validation; real sensor data; ablation (rule-only vs. ReAct) |
+
+[Expand each row with 1–2 sentences. Insert as Table 5.]
 
 ---
 
@@ -229,15 +295,27 @@ Appendices (Optional)
 
 ---
 
-## Appendix A (Optional). Scenario JSON Example
+## Appendix A. Scenario JSON Examples
 
-[Example healthy_baseline.json or bearing_wear_eval.json.]
+[healthy_baseline.json; bearing_wear_eval.json structure.]
 
 ---
 
-## Appendix B (Optional). Rule Document Example
+## Appendix B. Rule Document Example
 
-[Example bearing_wear.md.]
+[Full bearing_wear.md content.]
+
+---
+
+## Appendix C. API Endpoints / Configuration
+
+[Key .env vars; /scenario/load, /scenario/start; /api/review.]
+
+---
+
+## Appendix D. Key Code Snippets
+
+[ReAct agent creation (create_diagnosis_agent); query_rules tool; index_diagnosis; add_text_to_vector_db.]
 
 ---
 

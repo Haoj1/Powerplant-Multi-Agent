@@ -1,0 +1,25 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces System architecture. Data flows left to right via MQTT pub/sub. SQLite stores telemetry, alerts, diagnosis, and feedback.}}{18}{figure.caption.6}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Complete system architecture: frontend (React), backend (Simulator + Agents A--D), message buses (MQTT, optional Kafka), database (SQLite), RAG, and optional Salesforce (Case creation on approve). HTTP for API/frontend; MQTT for streaming events; Kafka for Agent B diagnosis queue.}}{21}{figure.caption.8}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces ReAct loop: Thought $\rightarrow $ Action $\rightarrow $ Observation. The LLM reasons, calls a tool, observes the result, and iterates.}}{22}{figure.caption.10}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces RAG flow: indexing (left) and retrieval (right). Documents are embedded and stored; queries retrieve similar vectors for context.}}{23}{figure.caption.12}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Agent A (Monitor) architecture: MQTT subscription $\rightarrow $ TelemetryBuffer $\rightarrow $ ThresholdDetector $\rightarrow $ MQTT publish.}}{24}{figure.caption.15}%
+\contentsline {figure}{\numberline {3.6}{\ignorespaces Agent B (Diagnosis) architecture: MQTT $\rightarrow $ Kafka (optional) $\rightarrow $ ReAct agent with tools $\rightarrow $ MQTT publish.}}{25}{figure.caption.16}%
+\contentsline {figure}{\numberline {3.7}{\ignorespaces Agent D (Review) architecture: React frontend $\rightarrow $ FastAPI; API uses SQLite, RAG, ReAct chat (SSE), review queue, and optional Salesforce Case creation on approve.}}{26}{figure.caption.17}%
+\contentsline {figure}{\numberline {3.8}{\ignorespaces Salesforce OAuth and Case flow: (1) Agent D obtains access token via password or client credentials flow; (2) creates Case via REST POST on approve; (3) fetches Case picklists via Describe API for form prefill.}}{27}{figure.caption.18}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Evaluation summary: scenario runs, detection rate, diagnosis accuracy, healthy false positive rate, fault scenario detection rate.}}{55}{figure.caption.33}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces Alert detection rate by signal (\%).}}{56}{figure.caption.35}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces Diagnosis accuracy by root cause (\%).}}{57}{figure.caption.37}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces Confusion matrix: expected (rows) vs.\ predicted (columns).}}{58}{figure.caption.38}%
+\contentsline {figure}{\numberline {5.5}{\ignorespaces Scenario matrix: detection rate vs.\ diagnosis accuracy per fault scenario.}}{58}{figure.caption.39}%
+\contentsline {figure}{\numberline {5.6}{\ignorespaces Steps and tokens: correct vs.\ incorrect diagnoses.}}{59}{figure.caption.40}%
+\contentsline {figure}{\numberline {5.7}{\ignorespaces Average token usage by scenario (k tokens).}}{59}{figure.caption.41}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }

@@ -340,6 +340,7 @@ def run_evaluation() -> dict:
 
     healthy_runs = 0
     healthy_runs_with_alerts = 0
+    processed_runs = 0  # runs with valid start_ts (actually queried for alerts)
 
     total = len(runs)
     if DEBUG:
@@ -373,6 +374,7 @@ def run_evaluation() -> dict:
             dt_start = datetime.fromisoformat(start_ts.replace("Z", "+00:00"))
         except Exception:
             continue
+        processed_runs += 1
         dt_end = dt_start + timedelta(seconds=w)
         dt_start_orig = dt_start  # For latency: always use original fault start
         # Fault scenarios: extend query window by WINDOW_BUFFER_SEC before/after for edge alerts
@@ -620,6 +622,18 @@ def run_evaluation() -> dict:
         healthy_runs_with_alerts / healthy_runs if healthy_runs else 0.0
     )
 
+    # Alert accuracy: (TP+TN)/total for binary alert detection
+    # TP = fault runs with alerts, TN = healthy runs without alerts
+    fault_runs = processed_runs - healthy_runs
+    tp = detection_run_count - healthy_runs_with_alerts
+    tn = healthy_runs - healthy_runs_with_alerts
+    alert_accuracy = (
+        (tp + tn) / processed_runs if processed_runs else None
+    )
+    fault_scenario_detection_rate = (
+        tp / fault_runs if fault_runs else None
+    )
+
     return {
         "scenario_runs": len(runs),
         # Detection (any alert)
@@ -635,6 +649,9 @@ def run_evaluation() -> dict:
         "healthy_runs_with_alerts": healthy_runs_with_alerts,
         "healthy_false_positive_rate": round(healthy_fp_rate, 4) if healthy_runs else None,
         "healthy_alerts_by_signal": dict(healthy_alerts_by_signal),
+        # Alert accuracy (TP+TN)/total; fault-only detection (excl. healthy)
+        "alert_accuracy": round(alert_accuracy, 4) if alert_accuracy is not None else None,
+        "fault_scenario_detection_rate": round(fault_scenario_detection_rate, 4) if fault_scenario_detection_rate is not None else None,
         # Diagnosis quality
         "diagnosis_count": diagnosis_count,
         "diagnosis_correct": diagnosis_correct,

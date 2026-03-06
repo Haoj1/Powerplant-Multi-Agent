@@ -1,0 +1,27 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {3.1}{\ignorespaces Design rationale for key architectural choices.}}{20}{table.caption.7}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Communication protocols and their roles.}}{21}{table.caption.9}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces Agent B (Diagnosis) tools.}}{23}{table.caption.11}%
+\contentsline {table}{\numberline {3.4}{\ignorespaces Agent D (Review) RAG and VLM tools.}}{24}{table.caption.13}%
+\contentsline {table}{\numberline {3.5}{\ignorespaces Fault types and physical effects.}}{24}{table.caption.14}%
+\contentsline {table}{\numberline {3.6}{\ignorespaces Message payload schemas (key fields).}}{28}{table.caption.19}%
+\contentsline {table}{\numberline {3.7}{\ignorespaces MQTT topic convention.}}{28}{table.caption.20}%
+\contentsline {table}{\numberline {3.8}{\ignorespaces Database tables.}}{29}{table.caption.21}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces Technology stack by category.}}{30}{table.caption.22}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Slope thresholds for trend-based alerts.}}{42}{table.caption.27}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Agent B (Diagnosis) tools.}}{44}{table.caption.28}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Agent D (Review) tools.}}{48}{table.caption.29}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces SQLite tables and main columns (full schema in Appendix~\ref {app:db_schema}).}}{50}{table.caption.30}%
+\contentsline {table}{\numberline {4.6}{\ignorespaces Backend components (EC2).}}{51}{table.caption.31}%
+\contentsline {table}{\numberline {4.7}{\ignorespaces Deployment summary: backend vs.\ frontend.}}{53}{table.caption.32}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {5.1}{\ignorespaces Alert detection by signal.}}{56}{table.caption.34}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces Diagnosis accuracy by root cause.}}{57}{table.caption.36}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
