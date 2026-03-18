@@ -1,4 +1,4 @@
-# Multi-Agent Powerplant Monitoring System
+# Multi-Agent Monitoring System
 
 A multi-agent system for real-time monitoring, anomaly detection, root cause analysis, and automated ticket creation for powerplant assets.
 
